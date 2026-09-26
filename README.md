@@ -1,56 +1,37 @@
-# Welcome to your Expo app 👋
+# App de pedidos B2B
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App móvil (Expo SDK 57 + Expo Router) para que los comercios clientes de cada distribuidora hagan sus pedidos. Se conecta al SaaS (`DEMOS/Distribuidora DEMO 001`, repo `ServiTecCdelU/distridemo01`) solo a través de `/api/app/v1`.
 
-## Get started
+- Relevamiento y decisiones: `docs/FASE_0_DESCUBRIMIENTO.md`
+- Plan de la fase actual (en el repo del SaaS): `PLAN_APP_PEDIDOS.md`
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Cómo correrla
 
 ```bash
-npm run reset-project
+cp .env.example .env      # completar con la URL y la publishable key de Supabase
+npm install
+npx expo start            # abrir con Expo Go o un development build
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Estructura
 
-### Other setup steps
+| Carpeta | Qué hay |
+|---|---|
+| `src/app/` | Rutas (Expo Router). `ingresar` (OTP), `invitacion` (deep link), `(app)/(tabs)/` inicio, catálogo, pedido, mis pedidos, cuenta; `(app)/pedidos/[id]` seguimiento |
+| `src/lib/` | Cliente de la API (`api.ts`), Supabase **solo para Auth**, hooks de datos (`queries.ts`), tipos de respuesta |
+| `src/state/` | Sesión, comercio activo + invitación pendiente, carrito por comercio (Zustand persistido) |
+| `src/components/` | Primitivas del diseño (`ui.tsx`), fila de producto, estado del pedido |
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Reglas
 
-## Learn more
+- **Los precios los pone el servidor.** El carrito guarda qué y cuánto; lo que se muestra sale de `POST /cotizar`. El `precioReferencia` del carrito es solo el estimado de la barra del catálogo.
+- **Confirmar un pedido reusa el mismo `clientRequestId`** en cada reintento hasta que el carrito cambia: el servidor no duplica.
+- **La app no lee tablas de Supabase.** Supabase se usa únicamente para el login por OTP.
+- Alta por invitación: el vendedor genera el QR en la ficha del cliente (panel) → `/a/{slug}?inv=…` → `servitecpedidos://invitacion?slug=…&inv=…`.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Pendiente para publicar
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Proveedor de SMS en Supabase Auth (Twilio/Vonage/MessageBird). Mientras tanto: "test phone numbers" o el ingreso por email.
+- Para el ingreso por email con código: la plantilla "Magic Link" de Supabase tiene que incluir `{{ .Token }}`.
+- EAS: `npx eas-cli@latest build -p android` y el SHA-256 del keystore en `public/.well-known/assetlinks.json` del SaaS (App Links).
+- Íconos y splash propios (hoy son los del template).
