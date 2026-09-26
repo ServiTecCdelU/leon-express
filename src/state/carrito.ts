@@ -1,6 +1,6 @@
 // Carrito por comercio, persistido. Guarda solo QUÉ y CUÁNTO: el precio que se
 // muestra en el carrito sale siempre de /cotizar (el servidor), nunca de acá.
-import 'expo-sqlite/localStorage/install';
+import '@/lib/local-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 

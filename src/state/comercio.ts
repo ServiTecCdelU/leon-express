@@ -1,5 +1,5 @@
 // Comercio (distribuidora) activo e invitación pendiente de canjear.
-import 'expo-sqlite/localStorage/install';
+import '@/lib/local-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
