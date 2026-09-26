@@ -11,6 +11,9 @@ import { ACCENT_DEFAULT, colors, fonts, radius, tint } from '@/theme';
 
 type Medio = 'sms' | 'email';
 
+// Largo del código que manda Supabase Auth: SMS 6 dígitos, email 8 (mailer_otp_length).
+const LARGO_CODIGO: Record<Medio, number> = { sms: 6, email: 8 };
+
 const inputStyle = {
   height: 56,
   borderRadius: radius.md,
@@ -55,8 +58,10 @@ export default function Ingresar() {
     setDestino(valor);
   };
 
+  const largo = LARGO_CODIGO[medio];
+
   const verificar = async () => {
-    if (!destino || codigo.length < 6) return;
+    if (!destino || codigo.length < largo) return;
     setError(null);
     setEnviando(true);
     const { error: e } =
@@ -148,7 +153,7 @@ export default function Ingresar() {
             </>
           ) : (
             <>
-              <T v="fuerte">Código de 6 dígitos</T>
+              <T v="fuerte">Código de {largo} dígitos</T>
               <T v="chico">Lo mandamos a {destino}</T>
               <TextInput
                 accessibilityLabel="Código de verificación"
@@ -157,12 +162,12 @@ export default function Ingresar() {
                 keyboardType="number-pad"
                 autoComplete="one-time-code"
                 textContentType="oneTimeCode"
-                maxLength={6}
+                maxLength={largo}
                 autoFocus
                 style={[inputStyle, { borderColor: accent, textAlign: 'center', letterSpacing: 12, fontFamily: fonts.display, fontSize: 26 }]}
               />
               {error && <Aviso texto={error} />}
-              <Boton onPress={verificar} cargando={enviando} disabled={codigo.length < 6}>
+              <Boton onPress={verificar} cargando={enviando} disabled={codigo.length < largo}>
                 Entrar a mi cuenta
               </Boton>
               <Pressable accessibilityRole="button" onPress={() => { setDestino(null); setCodigo(''); setError(null); }} style={{ alignSelf: 'center', padding: 10 }}>
