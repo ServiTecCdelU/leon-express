@@ -2,14 +2,16 @@
 // comercio vinculado para entrar a las pestañas.
 import { Stack } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Cargando } from '@/components/ui';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Aviso, Boton, Cargando } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { useCanjearInvitacion } from '@/lib/queries';
+import { supabase } from '@/lib/supabase';
 import { useComercioStore } from '@/state/comercio';
 import { colors } from '@/theme';
 
 export default function AppLayout() {
-  const { comercios, cargando } = useComercioActivo();
+  const { comercios, cargando, error, refetch } = useComercioActivo();
   const invitacion = useComercioStore((s) => s.invitacion);
   const setInvitacion = useComercioStore((s) => s.setInvitacion);
   const setSlugActivo = useComercioStore((s) => s.setSlugActivo);
@@ -31,6 +33,17 @@ export default function AppLayout() {
   }, [invitacion, canjear, setInvitacion, setSlugActivo]);
 
   if (cargando || canjear.isPending) return <Cargando />;
+
+  // Si /me falla (sin conexión, API caída, CORS en web) NO es "sin comercio": se muestra el error.
+  if (error) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24, gap: 16, justifyContent: 'center' }}>
+        <Aviso texto={`No pudimos cargar tus comercios: ${error.message}`} />
+        <Boton onPress={() => refetch()}>Reintentar</Boton>
+        <Boton variante="borde" onPress={() => supabase.auth.signOut()}>Salir</Boton>
+      </SafeAreaView>
+    );
+  }
 
   const tieneComercio = comercios.length > 0;
   return (

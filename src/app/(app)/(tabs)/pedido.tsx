@@ -1,21 +1,28 @@
-// Pantalla 4 del diseño: el pedido. Los precios y el total vienen de /cotizar (servidor);
-// confirmar reusa el mismo clientRequestId en cada reintento (el servidor no duplica).
+// Carrito: precios y total vienen de /cotizar (servidor); confirmar reusa el mismo
+// clientRequestId en cada reintento (el servidor no duplica).
 import * as Crypto from 'expo-crypto';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Aviso, Boton, FichaProducto, Insignia, Stepper, T, Tarjeta } from '@/components/ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BarraSuperior } from '@/components/barra-superior';
+import { Aviso, Boton, FichaProducto, Fila, Insignia, Stepper, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { ApiError } from '@/lib/api';
 import { iniciales, precio, presentacion } from '@/lib/format';
 import { useCotizacion, useCrearPedido } from '@/lib/queries';
-import { colorRubro } from '@/lib/rubro';
 import { useCarrito, useCarritoStore, type ItemCarrito } from '@/state/carrito';
-import { colors, fonts, radius, tint } from '@/theme';
+import { colors, fonts, radius } from '@/theme';
+
+const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; borde: string }> = {
+  normal: { texto: 'Al día', bg: colors.okSoft, fg: colors.okInk, borde: '#a7f3d0' },
+  atrasado: { texto: 'Con atraso', bg: colors.amberSoft, fg: colors.amberInk, borde: colors.warnLine },
+  moroso: { texto: 'Saldo vencido', bg: colors.errorSoft, fg: colors.errorInk, borde: colors.errorLine },
+};
 
 export default function Pedido() {
   const { slug, accent } = useComercioActivo();
+  const insets = useSafeAreaInsets();
   const carrito = useCarrito(slug);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
   const vaciar = useCarritoStore((s) => s.vaciar);
@@ -23,14 +30,13 @@ export default function Pedido() {
   const setRequestId = useCarritoStore((s) => s.setRequestId);
   const [notas, setNotas] = useState('');
 
-  const lineas = Object.values(carrito);
+  const lineas = useMemo(() => Object.values(carrito), [carrito]);
   const items = useMemo(() => lineas.map((l) => ({ productId: l.productId, quantity: l.cantidad })), [lineas]);
   const cot = useCotizacion(slug!, items);
   const crear = useCrearPedido(slug!);
 
   const precioServidor = new Map((cot.data?.lineas ?? []).map((l) => [l.productId, l]));
   const errorProducto = cot.error instanceof ApiError ? (cot.error.extra?.productId as string | undefined) : undefined;
-
   const cambiar = (l: ItemCarrito, cantidad: number) => setCantidad(slug!, l, cantidad);
 
   const confirmar = () => {
@@ -50,86 +56,72 @@ export default function Pedido() {
 
   if (lineas.length === 0) {
     return (
-      <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg, padding: 24, gap: 16, justifyContent: 'center' }}>
-        <T v="h1">Tu pedido está vacío</T>
-        <T>Sumá productos desde el catálogo o repetí tu último pedido desde el inicio.</T>
-        <Boton color={accent} icono="view-grid-outline" onPress={() => router.navigate('/catalogo')}>
-          Ir al catálogo
-        </Boton>
-      </SafeAreaView>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <BarraSuperior titulo="Carrito" color={accent} />
+        <View style={{ flex: 1, padding: 24, gap: 12, justifyContent: 'center', alignItems: 'center' }}>
+          <T v="h2">Tu carrito está vacío</T>
+          <T v="chico" style={{ textAlign: 'center' }}>Sumá productos desde el catálogo o repetí tu último pedido desde el inicio.</T>
+          <Boton color={accent} icono="package-variant-closed" onPress={() => router.navigate('/catalogo')} style={{ marginTop: 8 }}>
+            Ver productos
+          </Boton>
+        </View>
+      </View>
     );
   }
 
   const credito = cot.data?.credito;
   const total = cot.data?.total;
+  const clasif = CLASIFICACION[credito?.clasificacion ?? 'normal'] ?? CLASIFICACION.atrasado;
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 160 }} keyboardShouldPersistTaps="handled">
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <T v="h1">Tu pedido</T>
-          <T v="chico">{lineas.length} {lineas.length === 1 ? 'producto' : 'productos'}</T>
-        </View>
-
-        <View style={{ backgroundColor: colors.card, borderRadius: radius.lg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <BarraSuperior titulo="Carrito" subtitulo={`${lineas.length} ${lineas.length === 1 ? 'producto' : 'productos'}`} color={accent} />
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 170 }} keyboardShouldPersistTaps="handled">
+        <Tarjeta style={{ padding: 0 }}>
           {lineas.map((l, i) => {
             const srv = precioServidor.get(l.productId);
-            const { bg, fg } = colorRubro(l.rubro || l.nombre);
             const conError = errorProducto === l.productId;
             return (
-              <View key={l.productId} style={{ padding: 14, gap: 10, borderTopWidth: i ? 1 : 0, borderTopColor: colors.lineSoft, backgroundColor: conError ? colors.warnSoft : undefined }}>
+              <View key={l.productId} style={{ padding: 12, gap: 10, borderTopWidth: i ? 1 : 0, borderTopColor: colors.lineSoft, backgroundColor: conError ? colors.errorSoft : undefined }}>
                 <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                  <FichaProducto iniciales={iniciales(l.rubro || l.nombre)} bg={bg} fg={fg} size={48} />
+                  <FichaProducto iniciales={iniciales(l.nombre)} color={accent} size={40} />
                   <View style={{ flex: 1 }}>
-                    <T v="fuerte" numberOfLines={2}>{l.nombre}</T>
+                    <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{l.nombre}</T>
                     <T v="chico" style={{ fontSize: 12 }}>
-                      {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {precio(srv?.price ?? l.precioReferencia)} c/u
+                      {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {srv ? precio(srv.price) : '…'} c/u
                     </T>
                   </View>
-                  <T v="numero" style={{ fontSize: 16 }}>{precio(srv?.subtotal ?? l.precioReferencia * l.cantidad)}</T>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  {conError ? <Insignia texto="Ya no está disponible" bg={colors.offerSoft} fg={colors.offerInk} /> : <View />}
-                  <Stepper cantidad={l.cantidad} etiqueta="" onMenos={() => cambiar(l, l.cantidad - 1)} onMas={() => cambiar(l, l.cantidad + 1)} />
+                  {conError ? (
+                    <Insignia texto="Ya no está disponible" bg={colors.errorSoft} fg={colors.errorInk} borde={colors.errorLine} />
+                  ) : (
+                    <T v="numero" style={{ fontSize: 15 }}>{srv ? precio(srv.subtotal) : '…'}</T>
+                  )}
+                  <Stepper cantidad={l.cantidad} color={accent} onMenos={() => cambiar(l, l.cantidad - 1)} onMas={() => cambiar(l, l.cantidad + 1)} />
                 </View>
               </View>
             );
           })}
-        </View>
+        </Tarjeta>
 
         {cot.error && <Aviso texto={cot.error.message} />}
+        {cot.data?.retencion && <Aviso tono="info" texto={cot.data.retencion} />}
 
         {credito && (
           <Tarjeta style={{ gap: 10 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <T v="fuerte">Tu cuenta corriente</T>
-              <Insignia
-                texto={credito.clasificacion === 'normal' ? 'Al día' : credito.clasificacion === 'atrasado' ? 'Con atraso' : 'Moroso'}
-                bg={credito.clasificacion === 'normal' ? colors.okSoft : colors.amberSoft}
-                fg={credito.clasificacion === 'normal' ? colors.okInk : colors.amberInk}
-              />
+              <T v="fuerte" style={{ fontSize: 14 }}>Cuenta corriente</T>
+              <Insignia {...clasif} />
             </View>
-            {credito.limite ? (
-              <>
-                <View style={{ height: 10, borderRadius: 5, backgroundColor: colors.lineSoft, flexDirection: 'row', overflow: 'hidden' }}>
-                  <View style={{ width: `${Math.min(100, (credito.saldo / credito.limite) * 100)}%`, backgroundColor: colors.inkSoft }} />
-                  <View style={{ width: `${Math.min(100, ((total ?? 0) / credito.limite) * 100)}%`, backgroundColor: accent }} />
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <T v="chico" style={{ fontSize: 12 }}>Deuda {precio(credito.saldo)}</T>
-                  <T v="chico" style={{ fontSize: 12 }}>Límite {precio(credito.limite)}</T>
-                </View>
-              </>
-            ) : (
-              <T v="chico">Saldo actual {precio(credito.saldo)}</T>
-            )}
+            <Fila etiqueta="Saldo actual" valor={precio(credito.saldo)} />
+            {credito.limite ? <Fila etiqueta="Límite" valor={precio(credito.limite)} /> : null}
+            {credito.disponible != null ? <Fila etiqueta="Disponible" valor={precio(credito.disponible)} /> : null}
           </Tarjeta>
         )}
 
-        {cot.data?.retencion && <Aviso tono="info" texto={cot.data.retencion} />}
-
-        <View style={{ gap: 6 }}>
-          <T v="fuerte">Nota para la distribuidora</T>
+        <Tarjeta style={{ gap: 8 }}>
+          <T v="fuerte" style={{ fontSize: 14 }}>Nota para la distribuidora</T>
           <TextInput
             accessibilityLabel="Nota para la distribuidora"
             value={notas}
@@ -138,39 +130,24 @@ export default function Pedido() {
             placeholderTextColor={colors.muted}
             multiline
             maxLength={500}
-            style={{ minHeight: 70, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.card, padding: 12, fontSize: 15, fontFamily: fonts.body, color: colors.ink, textAlignVertical: 'top' }}
+            style={{ minHeight: 64, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 10, fontSize: 14, fontFamily: fonts.body, color: colors.ink, textAlignVertical: 'top' }}
           />
-        </View>
+        </Tarjeta>
 
-        <View style={{ gap: 8 }}>
-          {cot.data?.lista && (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <T v="chico">Tu lista de precios</T>
-              <T v="chico">{cot.data.lista.nombre}</T>
-            </View>
-          )}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', borderTopWidth: 1, borderStyle: 'dashed', borderTopColor: '#CFCABF', paddingTop: 10 }}>
-            <T v="h2" style={{ fontSize: 18 }}>Total</T>
-            <T style={{ fontFamily: fonts.display, fontSize: 26 }}>{total !== undefined ? precio(total) : '…'}</T>
-          </View>
-          <T v="chico" style={{ fontSize: 12 }}>Se paga a cuenta corriente, como siempre.</T>
-        </View>
+        <Tarjeta style={{ gap: 8 }}>
+          {cot.data?.lista && <Fila etiqueta="Lista de precios" valor={cot.data.lista.nombre} />}
+          <Fila etiqueta="Forma de pago" valor="Cuenta corriente" />
+          <View style={{ height: 1, backgroundColor: colors.lineSoft, marginVertical: 4 }} />
+          <Fila etiqueta="Total" valor={total !== undefined ? precio(total) : '…'} fuerte />
+        </Tarjeta>
       </ScrollView>
 
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: '#E6E2D8', padding: 16, gap: 8 }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.line, padding: 16, paddingBottom: 16 + Math.min(insets.bottom, 8), gap: 8 }}>
         {crear.error && <Aviso texto={crear.error.message} />}
-        <Boton
-          color={accent}
-          onPress={confirmar}
-          cargando={crear.isPending}
-          disabled={!cot.data || cot.isFetching || !!cot.error}
-        >
-          Confirmar pedido
+        <Boton color={accent} icono="check" onPress={confirmar} cargando={crear.isPending} disabled={!cot.data || cot.isFetching || !!cot.error}>
+          Confirmar pedido{total !== undefined ? ` · ${precio(total)}` : ''}
         </Boton>
-        <View style={{ backgroundColor: tint(accent, 0.08), borderRadius: radius.sm, padding: 8 }}>
-          <T v="chico" style={{ fontSize: 12, textAlign: 'center' }}>Tu vendedor recibe el pedido en su panel.</T>
-        </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

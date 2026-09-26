@@ -9,16 +9,19 @@ export const ESTADOS: { clave: EstadoPedido; titulo: string; detalle: string }[]
   { clave: 'entregado', titulo: 'Entregado', detalle: 'Llegó a tu comercio' },
 ];
 
-const ESTILO: Record<EstadoPedido, { texto: string; bg: string; fg: string }> = {
-  recibido: { texto: 'Recibido', bg: '#E0F2FE', fg: '#075985' },
-  preparando: { texto: 'Preparando', bg: colors.amberSoft, fg: colors.amberInk },
-  en_camino: { texto: 'En reparto', bg: '#EDE9FE', fg: '#5B21B6' },
-  entregado: { texto: 'Entregado', bg: colors.okSoft, fg: colors.okInk },
-  cancelado: { texto: 'Cancelado', bg: colors.lineSoft, fg: colors.inkSoft },
+// Mismos colores que los estados de Pedidos en el panel (teal / amber / sky / emerald).
+const ESTILO: Record<EstadoPedido, { texto: string; bg: string; fg: string; borde: string }> = {
+  recibido: { texto: 'Recibido', bg: colors.tealSoft, fg: colors.tealInk, borde: colors.tealLine },
+  preparando: { texto: 'Preparando', bg: colors.amberSoft, fg: colors.amberInk, borde: colors.warnLine },
+  en_camino: { texto: 'En reparto', bg: '#f0f9ff', fg: '#0369a1', borde: '#bae6fd' },
+  entregado: { texto: 'Entregado', bg: colors.okSoft, fg: colors.okInk, borde: '#a7f3d0' },
+  cancelado: { texto: 'Cancelado', bg: colors.lineSoft, fg: colors.muted, borde: colors.line },
 };
 
 export function EstadoPedidoInsignia({ estado, retenido }: { estado: EstadoPedido; retenido?: boolean }) {
-  if (retenido && estado === 'recibido') return <Insignia texto="En revisión" bg={colors.offerSoft} fg={colors.offerInk} />;
+  if (retenido && estado === 'recibido') {
+    return <Insignia texto="En revisión" bg={colors.amberSoft} fg={colors.amberInk} borde={colors.warnLine} />;
+  }
   const e = ESTILO[estado];
-  return <Insignia texto={e.texto} bg={e.bg} fg={e.fg} />;
+  return <Insignia texto={e.texto} bg={e.bg} fg={e.fg} borde={e.borde} />;
 }

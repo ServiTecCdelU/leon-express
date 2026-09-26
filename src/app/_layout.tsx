@@ -1,14 +1,10 @@
 import {
-  BricolageGrotesque_700Bold,
-  BricolageGrotesque_800ExtraBold,
-} from '@expo-google-fonts/bricolage-grotesque';
-import {
-  Figtree_400Regular,
-  Figtree_500Medium,
-  Figtree_600SemiBold,
-  Figtree_700Bold,
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_600SemiBold,
+  Geist_700Bold,
   useFonts,
-} from '@expo-google-fonts/figtree';
+} from '@expo-google-fonts/geist';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -35,12 +31,10 @@ const queryClient = new QueryClient({
 function Navegacion() {
   const { session, cargando } = useSesion();
   const [fuentes, errorFuentes] = useFonts({
-    BricolageGrotesque_700Bold,
-    BricolageGrotesque_800ExtraBold,
-    Figtree_400Regular,
-    Figtree_500Medium,
-    Figtree_600SemiBold,
-    Figtree_700Bold,
+    Geist_400Regular,
+    Geist_500Medium,
+    Geist_600SemiBold,
+    Geist_700Bold,
   });
   const hidratado = useHidratado();
   const listo = (fuentes || !!errorFuentes) && !cargando && hidratado;

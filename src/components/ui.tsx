@@ -1,4 +1,5 @@
-// Primitivas visuales del diseño (Bricolage Grotesque + Figtree, fondo crema, acento del comercio).
+// Primitivas visuales con la identidad del panel del SaaS (estilo shadcn: tarjetas blancas
+// con borde, botones teal, rounded-2xl, Geist).
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { ComponentProps, ReactNode } from 'react';
 import {
@@ -13,25 +14,25 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { colors, fonts, radius } from '@/theme';
+import { ACCENT_DEFAULT, colors, fonts, radius, tarjetaBase, tint } from '@/theme';
 
 export type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-export function Icono({ name, size = 22, color = colors.ink }: { name: IconName; size?: number; color?: ColorValue }) {
+export function Icono({ name, size = 20, color = colors.ink }: { name: IconName; size?: number; color?: ColorValue }) {
   return <MaterialCommunityIcons name={name} size={size} color={color} />;
 }
 
 type Variante = 'titulo' | 'h1' | 'h2' | 'cuerpo' | 'fuerte' | 'chico' | 'etiqueta' | 'numero';
 
 const ESTILOS: Record<Variante, TextStyle> = {
-  titulo: { fontFamily: fonts.display, fontSize: 32, lineHeight: 36, letterSpacing: -0.5 },
-  h1: { fontFamily: fonts.display, fontSize: 28, lineHeight: 32, letterSpacing: -0.4 },
-  h2: { fontFamily: fonts.display, fontSize: 21, lineHeight: 26 },
+  titulo: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, letterSpacing: -0.4 },
+  h1: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, letterSpacing: -0.3 },
+  h2: { fontFamily: fonts.bodySemi, fontSize: 17, lineHeight: 22 },
   cuerpo: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21 },
-  fuerte: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20 },
-  chico: { fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 18, color: colors.muted },
-  etiqueta: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase' },
-  numero: { fontFamily: fonts.display, fontSize: 18 },
+  fuerte: { fontFamily: fonts.bodySemi, fontSize: 15, lineHeight: 20 },
+  chico: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted },
+  etiqueta: { fontFamily: fonts.bodyMedium, fontSize: 12, letterSpacing: 0.3, color: colors.muted },
+  numero: { fontFamily: fonts.display, fontSize: 17, letterSpacing: -0.2 },
 };
 
 export function T({ v = 'cuerpo', style, ...props }: TextProps & { v?: Variante }) {
@@ -41,26 +42,30 @@ export function T({ v = 'cuerpo', style, ...props }: TextProps & { v?: Variante 
 export function Boton({
   children,
   onPress,
-  color = colors.ink,
+  color = ACCENT_DEFAULT,
   variante = 'solido',
   icono,
   cargando,
   disabled,
   style,
+  chico,
   accessibilityLabel,
 }: {
   children: ReactNode;
   onPress?: PressableProps['onPress'];
   color?: string;
-  variante?: 'solido' | 'borde';
+  /** solido = bg-teal-600; borde = variant="outline"; suave = bg-teal-50 text-teal-700 */
+  variante?: 'solido' | 'borde' | 'suave';
   icono?: IconName;
   cargando?: boolean;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  chico?: boolean;
   accessibilityLabel?: string;
 }) {
-  const solido = variante === 'solido';
   const inactivo = disabled || cargando;
+  const fondo = variante === 'solido' ? color : variante === 'suave' ? tint(color) : colors.card;
+  const texto = variante === 'solido' ? colors.white : variante === 'suave' ? color : colors.ink;
   return (
     <Pressable
       accessibilityRole="button"
@@ -70,28 +75,27 @@ export function Boton({
       disabled={inactivo}
       style={({ pressed }) => [
         {
-          minHeight: 54,
-          borderRadius: radius.lg - 2,
-          paddingHorizontal: 18,
+          minHeight: chico ? 40 : 48,
+          borderRadius: radius.md,
+          paddingHorizontal: chico ? 14 : 18,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
-          backgroundColor: solido ? color : colors.card,
-          borderWidth: solido ? 0 : 1.5,
+          backgroundColor: fondo,
+          borderWidth: variante === 'borde' ? 1 : 0,
           borderColor: colors.line,
-          opacity: inactivo ? 0.55 : pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
+          opacity: inactivo ? 0.5 : pressed ? 0.88 : 1,
         },
         style,
       ]}
     >
       {cargando ? (
-        <ActivityIndicator color={solido ? colors.white : colors.ink} />
+        <ActivityIndicator color={texto} />
       ) : (
         <>
-          {icono && <Icono name={icono} size={20} color={solido ? colors.white : colors.ink} />}
-          <T v="fuerte" style={{ color: solido ? colors.white : colors.ink, fontSize: 16 }}>
+          {icono && <Icono name={icono} size={18} color={texto} />}
+          <T v="fuerte" style={{ color: texto, fontSize: chico ? 14 : 15 }}>
             {children}
           </T>
         </>
@@ -101,7 +105,28 @@ export function Boton({
 }
 
 export function Tarjeta({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  return <View style={[{ backgroundColor: colors.card, borderRadius: radius.lg, padding: 16 }, style]}>{children}</View>;
+  return <View style={[tarjetaBase, { padding: 16 }, style]}>{children}</View>;
+}
+
+/** Encabezado de sección del panel: ícono en cuadrado teal-50 + título + descripción. */
+export function Encabezado({
+  titulo,
+  descripcion,
+  accion,
+}: {
+  titulo: string;
+  descripcion?: string;
+  accion?: ReactNode;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ flex: 1 }}>
+        <T v="h1">{titulo}</T>
+        {descripcion ? <T v="chico">{descripcion}</T> : null}
+      </View>
+      {accion}
+    </View>
+  );
 }
 
 export function Chip({
@@ -121,83 +146,80 @@ export function Chip({
       accessibilityState={{ selected: !!activo }}
       onPress={onPress}
       style={{
-        height: 38,
-        paddingHorizontal: 14,
+        height: 34,
+        paddingHorizontal: 12,
         borderRadius: radius.pill,
         justifyContent: 'center',
-        backgroundColor: activo ? color : colors.card,
-        borderWidth: activo ? 0 : 1.5,
-        borderColor: colors.line,
+        backgroundColor: activo ? tint(color) : colors.card,
+        borderWidth: 1,
+        borderColor: activo ? color : colors.line,
       }}
     >
-      <T v="fuerte" style={{ fontSize: 14, color: activo ? colors.white : colors.ink }}>
-        {texto}
-      </T>
+      <T style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: activo ? color : colors.inkSoft }}>{texto}</T>
     </Pressable>
   );
 }
 
-export function Insignia({ texto, bg, fg }: { texto: string; bg: string; fg: string }) {
+export function Insignia({ texto, bg, fg, borde }: { texto: string; bg: string; fg: string; borde?: string }) {
   return (
-    <View style={{ alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: bg }}>
-      <T style={{ fontFamily: fonts.bodyBold, fontSize: 12, color: fg }}>{texto}</T>
+    <View
+      style={{
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: radius.pill,
+        backgroundColor: bg,
+        borderWidth: borde ? 1 : 0,
+        borderColor: borde,
+      }}
+    >
+      <T style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: fg }}>{texto}</T>
     </View>
   );
 }
 
-/** Bloque de color con iniciales: reemplaza la foto del producto (el catálogo no tiene fotos). */
-export function FichaProducto({
-  iniciales,
-  bg,
-  fg,
-  pie,
-  size = 72,
-}: {
-  iniciales: string;
-  bg: string;
-  fg: string;
-  pie?: string;
-  size?: number;
-}) {
+/** Reemplazo de la foto del producto (el catálogo no tiene fotos): cuadrado teal-50 con iniciales. */
+export function FichaProducto({ iniciales, color = ACCENT_DEFAULT, size = 56 }: { iniciales: string; color?: string; size?: number }) {
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: radius.md,
-        backgroundColor: bg,
-        padding: 10,
-        justifyContent: pie ? 'space-between' : 'center',
-        alignItems: pie ? 'flex-start' : 'center',
+        backgroundColor: tint(color, 0.08),
+        borderWidth: 1,
+        borderColor: tint(color, 0.22),
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <T style={{ fontFamily: fonts.display, fontSize: size > 56 ? 22 : 17, color: fg }}>{iniciales}</T>
-      {pie ? <T style={{ fontFamily: fonts.bodyBold, fontSize: 10, color: fg, letterSpacing: 0.4 }}>{pie}</T> : null}
+      <T style={{ fontFamily: fonts.display, fontSize: size > 48 ? 18 : 15, color }}>{iniciales}</T>
     </View>
   );
 }
 
 export function Stepper({
   cantidad,
-  etiqueta,
   onMenos,
   onMas,
+  color = ACCENT_DEFAULT,
 }: {
   cantidad: number;
-  etiqueta: string;
   onMenos: () => void;
   onMas: () => void;
+  color?: string;
 }) {
+  const boton = { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' } as const;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', height: 44, borderRadius: radius.sm, backgroundColor: colors.ink }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Quitar uno" onPress={onMenos} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-        <Icono name="minus" color={colors.white} size={20} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Quitar uno" onPress={onMenos} style={boton}>
+        <Icono name={cantidad === 1 ? 'trash-can-outline' : 'minus'} color={colors.inkSoft} size={18} />
       </Pressable>
-      <T v="fuerte" style={{ color: colors.white, minWidth: 64, textAlign: 'center', fontSize: 14 }} accessibilityLabel={`${cantidad} ${etiqueta}`}>
-        {cantidad} {etiqueta}
+      <T v="fuerte" style={{ minWidth: 34, textAlign: 'center', color }} accessibilityLabel={`Cantidad ${cantidad}`}>
+        {cantidad}
       </T>
-      <Pressable accessibilityRole="button" accessibilityLabel="Sumar uno" onPress={onMas} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-        <Icono name="plus" color={colors.white} size={20} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Sumar uno" onPress={onMas} style={boton}>
+        <Icono name="plus" color={color} size={18} />
       </Pressable>
     </View>
   );
@@ -206,26 +228,35 @@ export function Stepper({
 export function Cargando() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-      <ActivityIndicator color={colors.muted} />
+      <ActivityIndicator color={ACCENT_DEFAULT} />
     </View>
   );
 }
 
-export function Aviso({ texto, tono = 'error', accion }: { texto: string; tono?: 'error' | 'info'; accion?: ReactNode }) {
-  const error = tono === 'error';
+export function Aviso({ texto, tono = 'error', accion }: { texto: string; tono?: 'error' | 'info' | 'ok'; accion?: ReactNode }) {
+  const t =
+    tono === 'error'
+      ? { bg: colors.errorSoft, borde: colors.errorLine, fg: colors.errorInk, icono: 'alert-circle-outline' as const }
+      : tono === 'ok'
+        ? { bg: colors.okSoft, borde: '#a7f3d0', fg: colors.okInk, icono: 'check-circle-outline' as const }
+        : { bg: colors.warnSoft, borde: colors.warnLine, fg: colors.warnInk, icono: 'information-outline' as const };
   return (
-    <View
-      style={{
-        borderRadius: radius.lg,
-        padding: 14,
-        gap: 10,
-        backgroundColor: error ? colors.warnSoft : colors.amberSoft,
-        borderWidth: 1.5,
-        borderColor: error ? colors.warnLine : '#FCD34D',
-      }}
-    >
-      <T style={{ color: error ? colors.warnInk : colors.amberInk, fontFamily: fonts.bodySemi }}>{texto}</T>
+    <View style={{ borderRadius: radius.lg, padding: 12, gap: 10, backgroundColor: t.bg, borderWidth: 1, borderColor: t.borde }}>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Icono name={t.icono} color={t.fg} size={18} />
+        <T style={{ color: t.fg, fontFamily: fonts.bodyMedium, fontSize: 14, flex: 1 }}>{texto}</T>
+      </View>
       {accion}
+    </View>
+  );
+}
+
+/** Fila etiqueta / valor (resúmenes). */
+export function Fila({ etiqueta, valor, fuerte }: { etiqueta: string; valor: string; fuerte?: boolean }) {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+      <T v="chico" style={{ fontSize: 14 }}>{etiqueta}</T>
+      <T v={fuerte ? 'numero' : 'fuerte'} style={{ fontSize: fuerte ? 18 : 14 }}>{valor}</T>
     </View>
   );
 }

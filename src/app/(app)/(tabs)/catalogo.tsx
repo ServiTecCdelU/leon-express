@@ -1,8 +1,8 @@
-// Pantalla 3 del diseño: catálogo paginado con búsqueda, rubros y stepper por bulto.
+// Productos: catálogo paginado con búsqueda, filtro por rubro y cantidades.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { BarraSuperior } from '@/components/barra-superior';
 import { ProductoFila } from '@/components/producto-fila';
 import { Aviso, Boton, Cargando, Chip, Icono, T } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
@@ -22,8 +22,7 @@ function useDebounce<T>(valor: T, ms: number): T {
 }
 
 export default function Catalogo() {
-  const { slug, accent } = useComercioActivo();
-  const [texto, setTexto] = useState('');
+  const { comercio, slug, accent } = useComercioActivo();
   const params = useLocalSearchParams<{ rubro?: string }>();
   const rubroParam = typeof params.rubro === 'string' ? params.rubro : '';
   const [rubro, setRubro] = useState(rubroParam);
@@ -34,6 +33,7 @@ export default function Catalogo() {
     setUltimoParam(rubroParam);
     setRubro(rubroParam);
   }
+  const [texto, setTexto] = useState('');
   const q = useDebounce(texto.trim(), 350);
 
   const catalogo = useCatalogo(slug!, q, rubro);
@@ -42,6 +42,7 @@ export default function Catalogo() {
   const setCantidad = useCarritoStore((s) => s.setCantidad);
 
   const productos = useMemo(() => catalogo.data?.pages.flatMap((p) => p.items) ?? [], [catalogo.data]);
+  const total = catalogo.data?.pages[0]?.total;
   const lineas = Object.values(carrito);
   const estimado = lineas.reduce((acc, i) => acc + i.precioReferencia * i.cantidad, 0);
 
@@ -49,41 +50,34 @@ export default function Catalogo() {
     (p: ProductoApp, cantidad: number) =>
       setCantidad(
         slug!,
-        {
-          productId: p.id,
-          nombre: p.nombre,
-          rubro: p.rubro,
-          precioReferencia: p.precio,
-          unidadesPorBulto: p.unidadesPorBulto,
-          seDivideEn: p.seDivideEn,
-        },
+        { productId: p.id, nombre: p.nombre, rubro: p.rubro, precioReferencia: p.precio, unidadesPorBulto: p.unidadesPorBulto, seDivideEn: p.seDivideEn },
         cantidad,
       ),
     [setCantidad, slug],
   );
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 12 }}>
-        <T v="h1">Catálogo</T>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 52, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.card, paddingHorizontal: 14 }}>
-          <Icono name="magnify" color={colors.muted} />
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <BarraSuperior titulo="Productos" subtitulo={total !== undefined ? `${total} productos · ${comercio?.nombre ?? ''}` : comercio?.nombre} color={accent} />
+      <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, paddingHorizontal: 12 }}>
+          <Icono name="magnify" color={colors.muted} size={18} />
           <TextInput
             accessibilityLabel="Buscar producto"
             value={texto}
             onChangeText={setTexto}
-            placeholder="Nombre, marca, código o código de barras"
+            placeholder="Buscar por nombre, código o código de barras"
             placeholderTextColor={colors.muted}
             returnKeyType="search"
-            style={{ flex: 1, fontSize: 16, fontFamily: fonts.body, color: colors.ink }}
+            style={{ flex: 1, fontSize: 15, fontFamily: fonts.body, color: colors.ink }}
           />
           {texto ? (
             <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setTexto('')} hitSlop={10}>
-              <Icono name="close-circle" color={colors.muted} size={20} />
+              <Icono name="close-circle" color={colors.muted} size={18} />
             </Pressable>
           ) : null}
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 2 }}>
           <Chip texto="Todos" activo={!rubro} color={accent} onPress={() => setRubro('')} />
           {(rubros.data ?? []).map((r) => (
             <Chip key={r} texto={r} activo={rubro === r} color={accent} onPress={() => setRubro(rubro === r ? '' : r)} />
@@ -94,14 +88,14 @@ export default function Catalogo() {
       {catalogo.isLoading ? (
         <Cargando />
       ) : catalogo.error ? (
-        <View style={{ padding: 20 }}>
-          <Aviso texto={catalogo.error.message} accion={<Boton variante="borde" onPress={() => catalogo.refetch()}>Reintentar</Boton>} />
+        <View style={{ padding: 16 }}>
+          <Aviso texto={catalogo.error.message} accion={<Boton variante="borde" chico onPress={() => catalogo.refetch()}>Reintentar</Boton>} />
         </View>
       ) : (
         <FlatList
           data={productos}
           keyExtractor={(p) => p.id}
-          contentContainerStyle={{ padding: 20, paddingTop: 10, gap: 10, paddingBottom: lineas.length ? 110 : 30 }}
+          contentContainerStyle={{ padding: 16, paddingTop: 10, gap: 8, paddingBottom: lineas.length ? 100 : 24 }}
           renderItem={({ item }) => (
             <ProductoFila producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
           )}
@@ -120,22 +114,22 @@ export default function Catalogo() {
       {lineas.length > 0 && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Ver pedido"
+          accessibilityLabel="Ver carrito"
           onPress={() => router.navigate('/pedido')}
-          style={{ position: 'absolute', left: 16, right: 16, bottom: 14, height: 60, borderRadius: radius.lg, backgroundColor: accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, elevation: 8, shadowColor: accent, shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 8 } }}
+          style={{ position: 'absolute', left: 16, right: 16, bottom: 12, height: 52, borderRadius: radius.md, backgroundColor: accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, elevation: 4, shadowColor: colors.ink, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }}
         >
-          <View>
-            <T style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}>
-              {lineas.length} {lineas.length === 1 ? 'producto' : 'productos'} · estimado
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Icono name="cart-outline" color={colors.white} size={20} />
+            <T v="fuerte" style={{ color: colors.white }}>
+              {lineas.length} {lineas.length === 1 ? 'producto' : 'productos'}
             </T>
-            <T v="numero" style={{ color: colors.white }}>{precio(estimado)}</T>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <T v="fuerte" style={{ color: colors.white, fontSize: 16 }}>Ver pedido</T>
-            <Icono name="chevron-right" color={colors.white} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <T v="fuerte" style={{ color: colors.white }}>{precio(estimado)}</T>
+            <Icono name="chevron-right" color={colors.white} size={20} />
           </View>
         </Pressable>
       )}
-    </SafeAreaView>
+    </View>
   );
 }

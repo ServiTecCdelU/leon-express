@@ -15,5 +15,6 @@ export function useComercioActivo() {
     accent: comercio?.colorPrimario || ACCENT_DEFAULT,
     cargando: me.isLoading,
     error: me.error,
+    refetch: me.refetch,
   };
 }

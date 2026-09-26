@@ -1,8 +1,8 @@
-// Pantalla 1 del diseño: invitación + ingreso con código por SMS (o email como alternativa).
+// Ingreso con código (SMS o email), con el estilo del login del panel: tarjeta centrada.
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Aviso, Boton, Icono, T } from '@/components/ui';
+import { Aviso, Boton, Icono, T, Tarjeta } from '@/components/ui';
 import { useComercioPublico } from '@/lib/queries';
 import { supabase } from '@/lib/supabase';
 import { celularE164 } from '@/lib/telefono';
@@ -15,14 +15,14 @@ type Medio = 'sms' | 'email';
 const LARGO_CODIGO: Record<Medio, number> = { sms: 6, email: 8 };
 
 const inputStyle = {
-  height: 56,
+  height: 48,
   borderRadius: radius.md,
-  borderWidth: 1.5,
+  borderWidth: 1,
   borderColor: colors.line,
   backgroundColor: colors.card,
-  paddingHorizontal: 16,
-  fontSize: 18,
-  fontFamily: fonts.bodySemi,
+  paddingHorizontal: 12,
+  fontSize: 16,
+  fontFamily: fonts.body,
   color: colors.ink,
 } as const;
 
@@ -33,10 +33,11 @@ export default function Ingresar() {
 
   const [medio, setMedio] = useState<Medio>('sms');
   const [contacto, setContacto] = useState('');
-  const [destino, setDestino] = useState<string | null>(null); // teléfono E.164 o email al que se mandó el código
+  const [destino, setDestino] = useState<string | null>(null);
   const [codigo, setCodigo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const largo = LARGO_CODIGO[medio];
 
   const enviarCodigo = async () => {
     setError(null);
@@ -58,8 +59,6 @@ export default function Ingresar() {
     setDestino(valor);
   };
 
-  const largo = LARGO_CODIGO[medio];
-
   const verificar = async () => {
     if (!destino || codigo.length < largo) return;
     setError(null);
@@ -73,110 +72,99 @@ export default function Ingresar() {
     if (e) setError('El código no es correcto o venció.');
   };
 
+  const cambiarMedio = () => {
+    setMedio(medio === 'sms' ? 'email' : 'sms');
+    setError(null);
+  };
+
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={{ backgroundColor: accent, paddingHorizontal: 24, paddingBottom: 72 }}>
-          <SafeAreaView edges={['top']}>
-            <View style={{ paddingTop: 24, gap: 18 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }}>
-                  <T style={{ fontFamily: fonts.display, fontSize: 24, color: accent }}>
-                    {(marca.data?.nombre ?? 'S').charAt(0).toUpperCase()}
-                  </T>
-                </View>
-                <View>
-                  <T style={{ color: colors.white, opacity: 0.85, fontSize: 13 }}>Distribuidora</T>
-                  <T v="h2" style={{ color: colors.white, fontSize: 20 }}>
-                    {marca.data?.nombre ?? 'Pedidos ServiTec'}
-                  </T>
-                </View>
-              </View>
-              <T v="titulo" style={{ color: colors.white, fontSize: 34, lineHeight: 36 }}>
-                {invitacion ? 'Tu vendedor te invitó a pedir desde el celular' : 'Hacé tus pedidos desde el celular'}
-              </T>
-              <T style={{ color: colors.white, opacity: 0.9 }}>
-                Catálogo con tus precios, seguimiento del pedido y tu cuenta corriente.
-              </T>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20, gap: 20 }}>
+          <View style={{ alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 52, height: 52, borderRadius: radius.lg, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
+              <Icono name="storefront-outline" color={colors.white} size={26} />
             </View>
-          </SafeAreaView>
-        </View>
-
-        <View style={{ marginTop: -44, marginHorizontal: 20, backgroundColor: colors.card, borderRadius: 22, padding: 18, flexDirection: 'row', gap: 14, alignItems: 'center', shadowColor: colors.ink, shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 6 }}>
-          <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: tint(accent), alignItems: 'center', justifyContent: 'center' }}>
-            <Icono name={invitacion ? 'storefront-outline' : 'qrcode-scan'} color={accent} size={26} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <T v="etiqueta" style={{ color: colors.muted }}>{invitacion ? 'Invitación lista' : 'Sin invitación'}</T>
-            <T v="fuerte">
-              {invitacion
-                ? 'Al ingresar, tu comercio queda vinculado'
-                : 'Si ya tenés cuenta, ingresá. Si no, pedile el QR a tu vendedor.'}
+            <T v="titulo" style={{ textAlign: 'center' }}>{marca.data?.nombre ?? 'Pedidos ServiTec'}</T>
+            <T v="chico" style={{ textAlign: 'center', fontSize: 14 }}>
+              {invitacion ? 'Tu vendedor te invitó a hacer los pedidos desde el celular.' : 'Hacé tus pedidos, mirá su estado y tu cuenta corriente.'}
             </T>
           </View>
-        </View>
 
-        <View style={{ padding: 24, gap: 14 }}>
-          {!destino ? (
-            <>
-              <T v="fuerte">{medio === 'sms' ? 'Tu número de celular' : 'Tu email'}</T>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {medio === 'sms' && (
-                  <View style={[inputStyle, { justifyContent: 'center' }]}>
-                    <T v="fuerte">+54</T>
+          <Tarjeta style={{ gap: 14, padding: 20 }}>
+            {!destino ? (
+              <>
+                <View style={{ gap: 4 }}>
+                  <T v="h2">Ingresar</T>
+                  <T v="chico">{medio === 'sms' ? 'Te mandamos un código por SMS. Sin contraseñas.' : 'Te mandamos un código por email.'}</T>
+                </View>
+                <View style={{ gap: 6 }}>
+                  <T v="fuerte" style={{ fontSize: 14 }}>{medio === 'sms' ? 'Celular' : 'Email'}</T>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {medio === 'sms' && (
+                      <View style={[inputStyle, { justifyContent: 'center', backgroundColor: colors.lineSoft }]}>
+                        <T v="fuerte">+54</T>
+                      </View>
+                    )}
+                    <TextInput
+                      accessibilityLabel={medio === 'sms' ? 'Número de celular' : 'Email'}
+                      value={contacto}
+                      onChangeText={setContacto}
+                      placeholder={medio === 'sms' ? '11 5555-0000' : 'nombre@comercio.com'}
+                      placeholderTextColor={colors.muted}
+                      keyboardType={medio === 'sms' ? 'phone-pad' : 'email-address'}
+                      autoCapitalize="none"
+                      autoComplete={medio === 'sms' ? 'tel' : 'email'}
+                      style={[inputStyle, { flex: 1 }]}
+                    />
                   </View>
-                )}
+                </View>
+                {error && <Aviso texto={error} />}
+                <Boton color={accent} onPress={enviarCodigo} cargando={enviando}>
+                  Enviarme el código
+                </Boton>
+                <Pressable accessibilityRole="button" onPress={cambiarMedio} style={{ alignSelf: 'center', padding: 6 }}>
+                  <T style={{ color: accent, fontFamily: fonts.bodyMedium, fontSize: 14 }}>
+                    {medio === 'sms' ? 'Ingresar con email' : 'Ingresar con el celular'}
+                  </T>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <View style={{ gap: 4 }}>
+                  <T v="h2">Código de {largo} dígitos</T>
+                  <T v="chico">Lo mandamos a {destino}</T>
+                </View>
                 <TextInput
-                  accessibilityLabel={medio === 'sms' ? 'Número de celular' : 'Email'}
-                  value={contacto}
-                  onChangeText={setContacto}
-                  placeholder={medio === 'sms' ? '11 5555-0000' : 'nombre@comercio.com'}
-                  placeholderTextColor={colors.muted}
-                  keyboardType={medio === 'sms' ? 'phone-pad' : 'email-address'}
-                  autoCapitalize="none"
-                  autoComplete={medio === 'sms' ? 'tel' : 'email'}
-                  style={[inputStyle, { flex: 1, borderColor: accent }]}
+                  accessibilityLabel="Código de verificación"
+                  value={codigo}
+                  onChangeText={(t) => setCodigo(t.replace(/\D/g, '').slice(0, largo))}
+                  keyboardType="number-pad"
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
+                  maxLength={largo}
+                  autoFocus
+                  style={[inputStyle, { height: 56, textAlign: 'center', letterSpacing: 10, fontFamily: fonts.display, fontSize: 24, borderColor: accent }]}
                 />
-              </View>
-              <T v="chico">
-                {medio === 'sms' ? 'Te mandamos un código por SMS. Sin contraseñas.' : 'Te mandamos un código por email.'}
-              </T>
-              {error && <Aviso texto={error} />}
-              <Boton onPress={enviarCodigo} cargando={enviando}>
-                Enviarme el código
-              </Boton>
-              <Pressable accessibilityRole="button" onPress={() => { setMedio(medio === 'sms' ? 'email' : 'sms'); setError(null); }} style={{ alignSelf: 'center', padding: 10 }}>
-                <T v="fuerte" style={{ color: accent }}>
-                  {medio === 'sms' ? 'Prefiero ingresar con email' : 'Prefiero ingresar con el celular'}
-                </T>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <T v="fuerte">Código de {largo} dígitos</T>
-              <T v="chico">Lo mandamos a {destino}</T>
-              <TextInput
-                accessibilityLabel="Código de verificación"
-                value={codigo}
-                onChangeText={(t) => setCodigo(t.replace(/\D/g, '').slice(0, largo))}
-                keyboardType="number-pad"
-                autoComplete="one-time-code"
-                textContentType="oneTimeCode"
-                maxLength={largo}
-                autoFocus
-                style={[inputStyle, { borderColor: accent, textAlign: 'center', letterSpacing: 12, fontFamily: fonts.display, fontSize: 26 }]}
-              />
-              {error && <Aviso texto={error} />}
-              <Boton onPress={verificar} cargando={enviando} disabled={codigo.length < largo}>
-                Entrar a mi cuenta
-              </Boton>
-              <Pressable accessibilityRole="button" onPress={() => { setDestino(null); setCodigo(''); setError(null); }} style={{ alignSelf: 'center', padding: 10 }}>
-                <T v="fuerte" style={{ color: accent }}>Cambiar {medio === 'sms' ? 'número' : 'email'}</T>
-              </Pressable>
-            </>
-          )}
-        </View>
-      </ScrollView>
+                {error && <Aviso texto={error} />}
+                <Boton color={accent} onPress={verificar} cargando={enviando} disabled={codigo.length < largo}>
+                  Ingresar
+                </Boton>
+                <Pressable accessibilityRole="button" onPress={() => { setDestino(null); setCodigo(''); setError(null); }} style={{ alignSelf: 'center', padding: 6 }}>
+                  <T style={{ color: accent, fontFamily: fonts.bodyMedium, fontSize: 14 }}>Cambiar {medio === 'sms' ? 'número' : 'email'}</T>
+                </Pressable>
+              </>
+            )}
+          </Tarjeta>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: radius.md, backgroundColor: tint(accent, 0.06) }}>
+            <Icono name={invitacion ? 'check-circle-outline' : 'qrcode'} color={accent} size={18} />
+            <T v="chico" style={{ flex: 1 }}>
+              {invitacion ? 'Invitación lista: al ingresar, tu comercio queda vinculado.' : '¿Primera vez? Pedile a tu vendedor el QR de tu comercio.'}
+            </T>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }

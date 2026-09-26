@@ -1,29 +1,71 @@
-// Logueado pero sin comercio vinculado: el alta es por invitación (QR del vendedor).
+// Logueado pero sin comercio vinculado. El alta es por invitación: abrir el link/QR del
+// vendedor o pegarlo acá (sirve también en Expo Go, que no abre el esquema propio).
 import { useLocalSearchParams } from 'expo-router';
-import { View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Aviso, Boton, Icono, T } from '@/components/ui';
+import { Aviso, Boton, Icono, T, Tarjeta } from '@/components/ui';
+import { tokenDeInvitacion } from '@/lib/invitacion';
+import { useCanjearInvitacion } from '@/lib/queries';
 import { supabase } from '@/lib/supabase';
-import { ACCENT_DEFAULT, colors, tint } from '@/theme';
+import { useComercioStore } from '@/state/comercio';
+import { ACCENT_DEFAULT, colors, fonts, radius, tint } from '@/theme';
 
 export default function SinComercio() {
-  const { error } = useLocalSearchParams<{ error?: string }>();
+  const { error: errorInicial } = useLocalSearchParams<{ error?: string }>();
+  const [texto, setTexto] = useState('');
+  const [aviso, setAviso] = useState<string | null>(errorInicial || null);
+  const canjear = useCanjearInvitacion();
+  const setSlugActivo = useComercioStore((s) => s.setSlugActivo);
+
+  const vincular = () => {
+    const token = tokenDeInvitacion(texto);
+    if (!token) {
+      setAviso('Eso no parece un link o código de invitación. Copialo completo del mensaje del vendedor.');
+      return;
+    }
+    setAviso(null);
+    canjear.mutate(token, {
+      onSuccess: (r) => setSlugActivo(r.slug),
+      onError: (e) => setAviso(e.message),
+    });
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ flex: 1, padding: 24, gap: 18, justifyContent: 'center' }}>
-        <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: tint(ACCENT_DEFAULT), alignItems: 'center', justifyContent: 'center' }}>
-          <Icono name="qrcode-scan" size={32} color={ACCENT_DEFAULT} />
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+        <View style={{ width: 48, height: 48, borderRadius: radius.md, backgroundColor: tint(ACCENT_DEFAULT), alignItems: 'center', justifyContent: 'center' }}>
+          <Icono name="store-plus-outline" size={26} color={ACCENT_DEFAULT} />
         </View>
-        <T v="h1">Falta vincular tu comercio</T>
-        <T>
-          Para hacer pedidos, tu vendedor te tiene que pasar el QR o el link de invitación de tu comercio.
-          Abrilo desde este celular y listo.
-        </T>
-        {error ? <Aviso texto={error} /> : null}
+        <View style={{ gap: 6 }}>
+          <T v="h1">Vinculá tu comercio</T>
+          <T v="chico" style={{ fontSize: 14 }}>
+            Tu vendedor te pasa un QR o un link de invitación. Abrilo desde este celular, o pegalo acá abajo.
+          </T>
+        </View>
+
+        <Tarjeta style={{ gap: 12 }}>
+          <T v="fuerte" style={{ fontSize: 14 }}>Link o código de invitación</T>
+          <TextInput
+            accessibilityLabel="Link o código de invitación"
+            value={texto}
+            onChangeText={setTexto}
+            placeholder="https://…/a/demo?inv=…"
+            placeholderTextColor={colors.muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={{ height: 48, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 12, fontSize: 15, fontFamily: fonts.body, color: colors.ink, backgroundColor: colors.card }}
+          />
+          {aviso ? <Aviso texto={aviso} /> : null}
+          <Boton icono="link-variant" onPress={vincular} cargando={canjear.isPending} disabled={!texto.trim()}>
+            Vincular comercio
+          </Boton>
+        </Tarjeta>
+
         <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()}>
           Salir
         </Boton>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

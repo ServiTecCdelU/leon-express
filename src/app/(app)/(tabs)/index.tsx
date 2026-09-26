@@ -1,28 +1,31 @@
-// Pantalla 2 del diseño: inicio del comercio.
+// Inicio: resumen tipo dashboard del panel (saldo, último pedido, accesos, rubros).
 import { router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { BarraSuperior } from '@/components/barra-superior';
 import { EstadoPedidoInsignia } from '@/components/estado-pedido';
-import { Icono, T, Tarjeta, type IconName } from '@/components/ui';
+import { Chip, Icono, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
-import { fechaCorta, iniciales, precio } from '@/lib/format';
+import { fechaCorta, precio } from '@/lib/format';
 import { useCuenta, usePedidos, useRubros } from '@/lib/queries';
-import { colorRubro } from '@/lib/rubro';
 import { useCarritoStore } from '@/state/carrito';
 import { useComercioStore } from '@/state/comercio';
-import { colors, fonts, radius, tint } from '@/theme';
+import { colors, radius, tarjetaBase, tint } from '@/theme';
 
-function Acceso({ icono, texto, accent, onPress }: { icono: IconName; texto: string; accent: string; onPress: () => void }) {
+function Acceso({ icono, titulo, detalle, accent, onPress }: { icono: IconName; titulo: string; detalle: string; accent: string; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => ({ flex: 1, backgroundColor: colors.card, borderRadius: radius.lg, padding: 14, gap: 10, opacity: pressed ? 0.85 : 1 })}
+      style={({ pressed }) => [tarjetaBase, { padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.85 : 1 }]}
     >
-      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: tint(accent), alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: tint(accent), alignItems: 'center', justifyContent: 'center' }}>
         <Icono name={icono} color={accent} />
       </View>
-      <T v="fuerte" style={{ fontSize: 14 }}>{texto}</T>
+      <View style={{ flex: 1 }}>
+        <T v="fuerte" style={{ fontSize: 14 }}>{titulo}</T>
+        <T v="chico" style={{ fontSize: 12 }}>{detalle}</T>
+      </View>
+      <Icono name="chevron-right" color={colors.muted} />
     </Pressable>
   );
 }
@@ -36,112 +39,91 @@ export default function Inicio() {
   const setCantidad = useCarritoStore((s) => s.setCantidad);
 
   const ultimo = pedidos.data?.[0];
+  const credito = cuenta.data?.credito;
 
   const repetirUltimo = () => {
     if (!ultimo || !slug) return;
     for (const it of ultimo.items) {
       if (!it.productId || it.cantidad <= 0) continue;
-      // El precio lo pone /cotizar al abrir el pedido; acá solo qué y cuánto.
+      // El precio lo pone /cotizar al abrir el carrito; acá solo qué y cuánto.
       setCantidad(slug, { productId: it.productId, nombre: it.nombre, rubro: '', precioReferencia: 0, unidadesPorBulto: null, seDivideEn: null }, it.cantidad);
     }
     router.navigate('/pedido');
   };
 
-  const refrescar = () => {
-    cuenta.refetch();
-    pedidos.refetch();
-  };
-
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <BarraSuperior titulo={comercio?.nombre ?? ''} subtitulo={cuenta.data?.cliente.nombre} color={accent} />
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={cuenta.isRefetching || pedidos.isRefetching} onRefresh={refrescar} />}
+        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={cuenta.isRefetching || pedidos.isRefetching}
+            onRefresh={() => {
+              cuenta.refetch();
+              pedidos.refetch();
+            }}
+          />
+        }
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
-            <T style={{ fontFamily: fonts.display, fontSize: 21, color: colors.white }}>{comercio?.nombre.charAt(0).toUpperCase()}</T>
-          </View>
-          <View style={{ flex: 1 }}>
-            <T v="chico">Hola, {cuenta.data?.cliente.nombre ?? '…'}</T>
-            <T v="h2" style={{ fontSize: 19 }}>{comercio?.nombre}</T>
-          </View>
-        </View>
-
         {comercios.length > 1 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {comercios.map((c) => (
-              <Pressable
-                key={c.slug}
-                accessibilityRole="button"
-                accessibilityState={{ selected: c.slug === slug }}
-                onPress={() => setSlugActivo(c.slug)}
-                style={{ paddingHorizontal: 14, height: 36, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: c.slug === slug ? colors.ink : colors.card }}
-              >
-                <T v="fuerte" style={{ fontSize: 13, color: c.slug === slug ? colors.white : colors.ink }}>{c.nombre}</T>
-              </Pressable>
+              <Chip key={c.slug} texto={c.nombre} activo={c.slug === slug} color={accent} onPress={() => setSlugActivo(c.slug)} />
             ))}
           </ScrollView>
         )}
 
-        <Pressable accessibilityRole="button" onPress={() => router.navigate('/cuenta')}>
-          <View style={{ backgroundColor: colors.ink, borderRadius: radius.xl, padding: 20, gap: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Icono name="wallet-outline" color="#9FE1D6" size={20} />
-              <T v="etiqueta" style={{ color: '#9FE1D6' }}>Tu cuenta corriente</T>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <Tarjeta style={{ flex: 1, gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Icono name="cash" size={16} color={colors.muted} />
+              <T v="etiqueta">Saldo</T>
             </View>
-            <T style={{ fontFamily: fonts.display, fontSize: 32, color: colors.white }}>
-              {cuenta.data ? precio(cuenta.data.credito.saldo) : '…'}
+            <T v="numero" style={{ fontSize: 20 }}>{credito ? precio(credito.saldo) : '—'}</T>
+          </Tarjeta>
+          <Tarjeta style={{ flex: 1, gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Icono name="credit-card-check-outline" size={16} color={colors.muted} />
+              <T v="etiqueta">Disponible</T>
+            </View>
+            <T v="numero" style={{ fontSize: 20, color: credito?.disponible != null ? accent : colors.muted }}>
+              {credito?.disponible != null ? precio(credito.disponible) : 'Sin límite'}
             </T>
-            {cuenta.data?.credito.disponible != null && (
-              <T style={{ color: '#C9D1CE', fontSize: 14 }}>
-                Crédito disponible <T style={{ color: colors.white, fontFamily: fonts.bodyBold }}>{precio(cuenta.data.credito.disponible)}</T>
-              </T>
-            )}
-          </View>
-        </Pressable>
-
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Acceso icono="repeat" texto={'Repetir último\npedido'} accent={accent} onPress={repetirUltimo} />
-          <Acceso icono="magnify" texto={'Buscar\nproductos'} accent={accent} onPress={() => router.navigate('/catalogo')} />
-          <Acceso icono="truck-delivery-outline" texto={'Mis\npedidos'} accent={accent} onPress={() => router.navigate('/pedidos')} />
+          </Tarjeta>
         </View>
 
         {ultimo && (
           <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/pedidos/[id]', params: { id: ultimo.id } })}>
-            <Tarjeta style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <View style={{ flex: 1, gap: 4 }}>
-                <T v="etiqueta" style={{ color: colors.muted }}>Último pedido · {fechaCorta(ultimo.fecha)}</T>
-                <T v="fuerte">{ultimo.cantidadProductos} productos · {precio(ultimo.total)}</T>
+            <Tarjeta style={{ gap: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <T v="etiqueta">Último pedido · {fechaCorta(ultimo.fecha)}</T>
                 <EstadoPedidoInsignia estado={ultimo.estado} retenido={ultimo.retenido} />
               </View>
-              <Icono name="chevron-right" color={colors.muted} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <T v="fuerte">{ultimo.cantidadProductos} productos</T>
+                <T v="numero">{precio(ultimo.total)}</T>
+              </View>
             </Tarjeta>
           </Pressable>
         )}
 
+        <T v="h2" style={{ marginTop: 4 }}>Accesos rápidos</T>
+        <Acceso icono="package-variant-closed" titulo="Hacer un pedido" detalle="Buscá por nombre, código o código de barras" accent={accent} onPress={() => router.navigate('/catalogo')} />
+        {ultimo && <Acceso icono="repeat" titulo="Repetir último pedido" detalle="Se carga en el carrito con los precios de hoy" accent={accent} onPress={repetirUltimo} />}
+        <Acceso icono="clipboard-list-outline" titulo="Mis pedidos" detalle="Estado y seguimiento" accent={accent} onPress={() => router.navigate('/pedidos')} />
+
         {(rubros.data?.length ?? 0) > 0 && (
-          <View style={{ gap: 12 }}>
-            <T v="h2">Rubros</T>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {rubros.data!.slice(0, 8).map((r) => {
-                const { bg, fg } = colorRubro(r);
-                return (
-                  <Pressable
-                    key={r}
-                    accessibilityRole="button"
-                    onPress={() => router.navigate({ pathname: '/catalogo', params: { rubro: r } })}
-                    style={{ width: '22.5%', aspectRatio: 1, borderRadius: 18, backgroundColor: bg, padding: 10, justifyContent: 'space-between' }}
-                  >
-                    <T style={{ fontFamily: fonts.display, fontSize: 21, color: fg }}>{iniciales(r)}</T>
-                    <T numberOfLines={1} style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: fg }}>{r}</T>
-                  </Pressable>
-                );
-              })}
+          <>
+            <T v="h2" style={{ marginTop: 4 }}>Rubros</T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {rubros.data!.slice(0, 12).map((r) => (
+                <Chip key={r} texto={r} color={accent} onPress={() => router.navigate({ pathname: '/catalogo', params: { rubro: r } })} />
+              ))}
             </View>
-          </View>
+          </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

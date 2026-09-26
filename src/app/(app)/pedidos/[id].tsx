@@ -1,22 +1,14 @@
-// Pantalla 5 del diseño: seguimiento del pedido.
+// Detalle / seguimiento de un pedido.
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ESTADOS } from '@/components/estado-pedido';
-import { Aviso, Boton, Cargando, Icono, T, Tarjeta } from '@/components/ui';
+import { BarraSuperior } from '@/components/barra-superior';
+import { ESTADOS, EstadoPedidoInsignia } from '@/components/estado-pedido';
+import { Aviso, Boton, Cargando, Fila, Icono, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaHora, precio } from '@/lib/format';
 import { usePedidos } from '@/lib/queries';
 import { useCarritoStore } from '@/state/carrito';
-import { colors, fonts, radius } from '@/theme';
-
-const TITULO: Record<string, string> = {
-  recibido: 'Recibimos tu pedido',
-  preparando: 'Lo están preparando',
-  en_camino: 'Va en camino',
-  entregado: 'Entregado',
-  cancelado: 'Pedido cancelado',
-};
+import { colors, radius } from '@/theme';
 
 export default function Seguimiento() {
   const { id, nuevo } = useLocalSearchParams<{ id: string; nuevo?: string }>();
@@ -25,13 +17,24 @@ export default function Seguimiento() {
   const setCantidad = useCarritoStore((s) => s.setCantidad);
   const pedido = pedidos.data?.find((p) => p.id === id);
 
+  const volver = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Volver"
+      onPress={() => (router.canGoBack() ? router.back() : router.navigate('/pedidos'))}
+      style={{ width: 36, height: 36, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Icono name="arrow-left" size={18} />
+    </Pressable>
+  );
+
   if (pedidos.isLoading) return <Cargando />;
   if (!pedido) {
     return (
-      <SafeAreaView style={{ flex: 1, padding: 24, gap: 16, justifyContent: 'center' }}>
-        <Aviso texto="No encontramos este pedido." />
-        <Boton onPress={() => router.back()}>Volver</Boton>
-      </SafeAreaView>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <BarraSuperior titulo="Pedido" color={accent} izquierda={volver} />
+        <View style={{ padding: 16 }}><Aviso texto="No encontramos este pedido." /></View>
+      </View>
     );
   }
 
@@ -48,90 +51,66 @@ export default function Seguimiento() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ backgroundColor: colors.ink, paddingHorizontal: 20, paddingBottom: 22 }}>
-        <SafeAreaView edges={['top']} style={{ gap: 10, paddingTop: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Volver"
-              onPress={() => (router.canGoBack() ? router.back() : router.navigate('/pedidos'))}
-              style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Icono name="chevron-left" color={colors.white} />
-            </Pressable>
-            <T style={{ color: '#C9D1CE', fontSize: 14 }}>
-              {pedido.numero ? `Pedido N° ${pedido.numero}` : 'Pedido'} · {precio(pedido.total)}
-            </T>
-          </View>
-          <T v="titulo" style={{ color: colors.white }}>{TITULO[pedido.estado]}</T>
-          <T style={{ color: '#C9D1CE' }}>Hecho el {fechaHora(pedido.fecha)}</T>
-        </SafeAreaView>
-      </View>
-
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}>
-        {nuevo === '1' && !pedido.retenido && <Aviso tono="info" texto="¡Listo! Tu pedido llegó a la distribuidora." />}
-        {pedido.retenido && (
-          <Aviso tono="info" texto="La distribuidora va a revisar el pedido por el estado de tu cuenta antes de prepararlo." />
-        )}
+      <BarraSuperior
+        titulo={pedido.numero ? `Pedido N° ${pedido.numero}` : 'Pedido'}
+        subtitulo={fechaHora(pedido.fecha)}
+        color={accent}
+        izquierda={volver}
+        derecha={<EstadoPedidoInsignia estado={pedido.estado} retenido={pedido.retenido} />}
+      />
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
+        {nuevo === '1' && !pedido.retenido && <Aviso tono="ok" texto="Listo, tu pedido llegó a la distribuidora." />}
+        {pedido.retenido && <Aviso tono="info" texto="La distribuidora va a revisar el pedido por el estado de tu cuenta antes de prepararlo." />}
 
         {!cancelado && (
-          <View style={{ backgroundColor: colors.card, borderRadius: 22, padding: 18 }}>
+          <Tarjeta>
             {ESTADOS.map((e, i) => {
               const hecho = i < idx || pedido.estado === 'entregado';
               const actual = i === idx && pedido.estado !== 'entregado';
               return (
-                <View key={e.clave} style={{ flexDirection: 'row', gap: 14 }}>
+                <View key={e.clave} style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ alignItems: 'center' }}>
                     <View
                       style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 15,
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: hecho ? accent : actual ? colors.card : colors.lineSoft,
-                        borderWidth: actual ? 3 : 0,
-                        borderColor: accent,
+                        backgroundColor: hecho ? accent : colors.card,
+                        borderWidth: hecho ? 0 : 2,
+                        borderColor: actual ? accent : colors.line,
                       }}
                     >
-                      {hecho ? <Icono name="check" color={colors.white} size={16} /> : actual ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: accent }} /> : null}
+                      {hecho ? <Icono name="check" color={colors.white} size={14} /> : actual ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: accent }} /> : null}
                     </View>
-                    {i < ESTADOS.length - 1 && <View style={{ width: 3, height: 34, backgroundColor: i < idx ? accent : '#E6E2D8' }} />}
+                    {i < ESTADOS.length - 1 && <View style={{ width: 2, height: 30, backgroundColor: i < idx ? accent : colors.line }} />}
                   </View>
-                  <View style={{ paddingTop: 4, flex: 1 }}>
-                    <T v="fuerte" style={{ color: actual ? accent : hecho ? colors.ink : colors.muted, fontFamily: actual ? fonts.display : fonts.bodyBold }}>
-                      {e.titulo}
-                    </T>
-                    <T v="chico">{e.detalle}</T>
+                  <View style={{ paddingTop: 2, flex: 1 }}>
+                    <T v="fuerte" style={{ fontSize: 14, color: actual ? accent : hecho ? colors.ink : colors.muted }}>{e.titulo}</T>
+                    <T v="chico" style={{ fontSize: 12 }}>{e.detalle}</T>
                   </View>
                 </View>
               );
             })}
-          </View>
+          </Tarjeta>
         )}
 
         <Tarjeta style={{ gap: 8 }}>
-          <T v="fuerte">Productos</T>
+          <T v="fuerte" style={{ fontSize: 14 }}>Productos</T>
           {pedido.items.map((it, i) => (
             <View key={`${it.productId}-${i}`} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-              <T style={{ flex: 1 }} numberOfLines={2}>{it.nombre}</T>
-              <T v="fuerte">x {it.cantidad}</T>
+              <T style={{ flex: 1, fontSize: 14 }} numberOfLines={2}>{it.nombre}</T>
+              <T v="fuerte" style={{ fontSize: 14 }}>x {it.cantidad}</T>
             </View>
           ))}
+          <View style={{ height: 1, backgroundColor: colors.lineSoft, marginVertical: 4 }} />
+          <Fila etiqueta="Total" valor={precio(pedido.total)} fuerte />
         </Tarjeta>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={repetir}
-          style={({ pressed }) => ({ backgroundColor: colors.card, borderRadius: radius.lg, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.85 : 1 })}
-        >
-          <Icono name="repeat" color={colors.muted} />
-          <View style={{ flex: 1 }}>
-            <T v="fuerte">Volver a pedir lo mismo</T>
-            <T v="chico">Se carga en tu pedido con los precios de hoy</T>
-          </View>
-          <Icono name="chevron-right" color={colors.muted} />
-        </Pressable>
+        <Boton variante="suave" color={accent} icono="repeat" onPress={repetir}>
+          Volver a pedir lo mismo
+        </Boton>
       </ScrollView>
     </View>
   );
