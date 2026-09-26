@@ -158,7 +158,7 @@ export default function Ingresar() {
               <TextInput
                 accessibilityLabel="Código de verificación"
                 value={codigo}
-                onChangeText={(t) => setCodigo(t.replace(/\D/g, '').slice(0, 6))}
+                onChangeText={(t) => setCodigo(t.replace(/\D/g, '').slice(0, largo))}
                 keyboardType="number-pad"
                 autoComplete="one-time-code"
                 textContentType="oneTimeCode"
