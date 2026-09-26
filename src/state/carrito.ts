@@ -1,7 +1,7 @@
 // Carrito por comercio, persistido. Guarda solo QUÉ y CUÁNTO: el precio que se
 // muestra en el carrito sale siempre de /cotizar (el servidor), nunca de acá.
-import '@/lib/local-storage';
 import { create } from 'zustand';
+import { almacen } from '@/lib/almacen';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export interface ItemCarrito {
@@ -43,7 +43,7 @@ export const useCarritoStore = create<CarritoState>()(
         set((s) => ({ items: { ...s.items, [slug]: {} }, requestIds: { ...s.requestIds, [slug]: undefined } })),
       setRequestId: (slug, id) => set((s) => ({ requestIds: { ...s.requestIds, [slug]: id } })),
     }),
-    { name: 'carrito', storage: createJSONStorage(() => localStorage) },
+    { name: 'carrito', storage: createJSONStorage(() => almacen) },
   ),
 );
 

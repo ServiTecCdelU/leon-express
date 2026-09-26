@@ -1,6 +1,6 @@
 // Comercio (distribuidora) activo e invitación pendiente de canjear.
-import '@/lib/local-storage';
 import { create } from 'zustand';
+import { almacen } from '@/lib/almacen';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export interface InvitacionPendiente {
@@ -24,6 +24,6 @@ export const useComercioStore = create<ComercioState>()(
       setSlugActivo: (slugActivo) => set({ slugActivo }),
       setInvitacion: (invitacion) => set({ invitacion }),
     }),
-    { name: 'comercio', storage: createJSONStorage(() => localStorage) },
+    { name: 'comercio', storage: createJSONStorage(() => almacen) },
   ),
 );

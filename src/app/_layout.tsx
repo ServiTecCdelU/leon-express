@@ -14,6 +14,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { useHidratado } from '@/hooks/use-hidratado';
 import { ApiError } from '@/lib/api';
 import { SesionProvider, useSesion } from '@/state/sesion';
 import { colors } from '@/theme';
@@ -41,7 +42,8 @@ function Navegacion() {
     Figtree_600SemiBold,
     Figtree_700Bold,
   });
-  const listo = (fuentes || !!errorFuentes) && !cargando;
+  const hidratado = useHidratado();
+  const listo = (fuentes || !!errorFuentes) && !cargando && hidratado;
   const qc = useQueryClient();
 
   useEffect(() => {
