@@ -51,6 +51,7 @@ export default function AppLayout() {
       <Stack.Protected guard={tieneComercio}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="pedidos/[id]" />
+        <Stack.Screen name="escanear" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
       </Stack.Protected>
       <Stack.Protected guard={!tieneComercio}>
         <Stack.Screen name="sin-comercio" initialParams={{ error: canjear.error?.message ?? '' }} />

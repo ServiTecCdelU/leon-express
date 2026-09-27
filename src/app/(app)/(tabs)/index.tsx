@@ -111,6 +111,7 @@ export default function Inicio() {
         <OfertasInicio slug={slug!} accent={accent} />
 
         <T v="h2" style={{ marginTop: 4 }}>Accesos rápidos</T>
+        <Acceso icono="barcode-scan" titulo="Escanear productos" detalle="Apuntá la cámara al código de barras de la góndola" accent={accent} onPress={() => router.push('/escanear')} />
         <Acceso icono="package-variant-closed" titulo="Hacer un pedido" detalle="Buscá por nombre, código o código de barras" accent={accent} onPress={() => router.navigate('/catalogo')} />
         {ultimo && <Acceso icono="repeat" titulo="Repetir último pedido" detalle="Se carga en el carrito con los precios de hoy" accent={accent} onPress={repetirUltimo} />}
         <Acceso icono="clipboard-list-outline" titulo="Mis pedidos" detalle="Estado y seguimiento" accent={accent} onPress={() => router.navigate('/pedidos')} />

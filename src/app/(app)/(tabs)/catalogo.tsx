@@ -79,6 +79,14 @@ export default function Catalogo() {
               <Icono name="close-circle" color={colors.muted} size={18} />
             </Pressable>
           ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Escanear código de barras"
+            onPress={() => router.push('/escanear')}
+            style={{ marginRight: -6, width: 36, height: 36, borderRadius: radius.sm, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Icono name="barcode-scan" color={colors.white} size={20} />
+          </Pressable>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 2 }}>
           <Chip texto="Todos" activo={!rubro && !soloOfertas} color={accent} onPress={() => { setRubro(''); setSoloOfertas(false); }} />
