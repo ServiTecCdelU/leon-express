@@ -2,6 +2,7 @@
 // llegan en la Fase 2 (la API todavía no los expone).
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
+import { PieServiTec } from '@/components/pie-servitec';
 import { Aviso, Boton, Cargando, Fila, Insignia, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { precio } from '@/lib/format';
@@ -67,6 +68,8 @@ export default function Cuenta() {
           <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()}>
             Cerrar sesión
           </Boton>
+
+          <PieServiTec />
         </ScrollView>
       )}
     </View>
