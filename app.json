@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pedidos ServiTec",
     "slug": "app-pedidos",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "servitecpedidos",
@@ -19,7 +19,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "output": "single",
@@ -48,6 +51,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "serviteccdelu",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7d7ecc25-0858-4614-8d2a-d54dd7e4460b"
+      }
     }
   }
 }
