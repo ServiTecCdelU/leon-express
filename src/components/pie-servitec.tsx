@@ -5,7 +5,7 @@ import { ACCENT_DEFAULT, colors, fonts, radius } from '@/theme';
 
 const TELEFONO_VISIBLE = '3442 533465';
 const TELEFONO_E164 = '+543442533465';
-const WHATSAPP = 'https://wa.me/5493442533465?text=' + encodeURIComponent('Hola ServiTec, quiero información sobre el sistema de gestión.');
+const WHATSAPP = 'https://wa.me/5493442533465?text=' + encodeURIComponent('Hola ServiTec, quiero información sobre el Sistema de Gestión.');
 
 export function PieServiTec() {
   return (
@@ -16,7 +16,7 @@ export function PieServiTec() {
         </View>
         <T style={{ fontFamily: fonts.display, fontSize: 16 }}>ServiTec</T>
       </View>
-      <T v="chico" style={{ textAlign: 'center' }}>Sistemas de gestión</T>
+      <T v="chico" style={{ textAlign: 'center' }}>Sistemas de Gestión</T>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Pressable
           accessibilityRole="link"
