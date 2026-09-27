@@ -39,7 +39,6 @@ export default function Inicio() {
   const setCantidad = useCarritoStore((s) => s.setCantidad);
 
   const ultimo = pedidos.data?.[0];
-  const credito = cuenta.data?.credito;
 
   const repetirUltimo = () => {
     if (!ultimo || !slug) return;
@@ -74,24 +73,7 @@ export default function Inicio() {
           </ScrollView>
         )}
 
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Tarjeta style={{ flex: 1, gap: 6 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Icono name="cash" size={16} color={colors.muted} />
-              <T v="etiqueta">Saldo</T>
-            </View>
-            <T v="numero" style={{ fontSize: 20 }}>{credito ? precio(credito.saldo) : '—'}</T>
-          </Tarjeta>
-          <Tarjeta style={{ flex: 1, gap: 6 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Icono name="credit-card-check-outline" size={16} color={colors.muted} />
-              <T v="etiqueta">Disponible</T>
-            </View>
-            <T v="numero" style={{ fontSize: 20, color: credito?.disponible != null ? accent : colors.muted }}>
-              {credito?.disponible != null ? precio(credito.disponible) : 'Sin límite'}
-            </T>
-          </Tarjeta>
-        </View>
+        <OfertasInicio slug={slug!} accent={accent} />
 
         {ultimo && (
           <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/pedidos/[id]', params: { id: ultimo.id } })}>
@@ -107,8 +89,6 @@ export default function Inicio() {
             </Tarjeta>
           </Pressable>
         )}
-
-        <OfertasInicio slug={slug!} accent={accent} />
 
         <T v="h2" style={{ marginTop: 4 }}>Accesos rápidos</T>
         <Acceso icono="barcode-scan" titulo="Escanear productos" detalle="Apuntá la cámara al código de barras de la góndola" accent={accent} onPress={() => router.push('/escanear')} />
