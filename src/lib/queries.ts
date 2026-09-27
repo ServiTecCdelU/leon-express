@@ -8,6 +8,7 @@ import type {
   Me,
   PaginaCatalogo,
   PedidoCreado,
+  OfertaApp,
   PedidoResumen,
 } from '@/lib/tipos';
 
@@ -18,6 +19,7 @@ export const qk = {
   comercio: (slug: string) => ['comercio', slug] as const,
   catalogo: (slug: string, q: string, rubro: string) => ['catalogo', slug, q, rubro] as const,
   rubros: (slug: string) => ['rubros', slug] as const,
+  ofertas: (slug: string) => ['ofertas', slug] as const,
   cotizacion: (slug: string, clave: string) => ['cotizacion', slug, clave] as const,
   pedidos: (slug: string) => ['pedidos', slug] as const,
   cuenta: (slug: string) => ['cuenta', slug] as const,
@@ -37,17 +39,26 @@ export function useComercioPublico(slug: string | undefined) {
   });
 }
 
-export function useCatalogo(slug: string, q: string, rubro: string) {
+export function useCatalogo(slug: string, q: string, rubro: string, soloOfertas = false) {
   return useInfiniteQuery({
-    queryKey: qk.catalogo(slug, q, rubro),
+    queryKey: [...qk.catalogo(slug, q, rubro), soloOfertas],
     initialPageParam: 1,
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ page: String(pageParam), pageSize: String(PAGE_SIZE) });
       if (q) params.set('q', q);
       if (rubro) params.set('rubro', rubro);
+      if (soloOfertas) params.set('soloOfertas', '1');
       return api<PaginaCatalogo>(`/comercios/${slug}/catalogo?${params}`);
     },
     getNextPageParam: (ultima) => (ultima.page < ultima.totalPages ? ultima.page + 1 : undefined),
+  });
+}
+
+export function useOfertas(slug: string) {
+  return useQuery({
+    queryKey: qk.ofertas(slug),
+    queryFn: () => api<OfertaApp[]>(`/comercios/${slug}/ofertas`),
+    staleTime: 5 * 60_000,
   });
 }
 

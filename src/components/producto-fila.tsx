@@ -2,10 +2,10 @@
 // presentación y precio; a la derecha "Agregar" o el stepper.
 import { memo } from 'react';
 import { View } from 'react-native';
-import { Boton, FichaProducto, Stepper, T } from '@/components/ui';
+import { Boton, FichaProducto, Insignia, Stepper, T } from '@/components/ui';
 import { iniciales, precio, presentacion } from '@/lib/format';
 import type { ProductoApp } from '@/lib/tipos';
-import { tarjetaBase } from '@/theme';
+import { colors, tarjetaBase } from '@/theme';
 
 export const ProductoFila = memo(function ProductoFila({
   producto,
@@ -27,7 +27,15 @@ export const ProductoFila = memo(function ProductoFila({
           {presentacion(producto.unidadesPorBulto, producto.seDivideEn)}
           {producto.codigo ? ` · Cód. ${producto.codigo}` : ''}
         </T>
-        <T v="numero" style={{ fontSize: 16, marginTop: 2 }}>{precio(producto.precio)}</T>
+        {producto.precioOferta !== null ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
+            <T v="numero" style={{ fontSize: 16, color: accent }}>{precio(producto.precioOferta)}</T>
+            <T v="chico" style={{ fontSize: 12, textDecorationLine: 'line-through' }}>{precio(producto.precio)}</T>
+            <Insignia texto={`−${producto.descuentoPct}%`} bg={accent} fg={colors.white} />
+          </View>
+        ) : (
+          <T v="numero" style={{ fontSize: 16, marginTop: 2 }}>{precio(producto.precio)}</T>
+        )}
       </View>
       {cantidad > 0 ? (
         <Stepper

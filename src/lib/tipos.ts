@@ -18,10 +18,23 @@ export interface ProductoApp {
   nombre: string;
   codigo: string;
   rubro: string;
+  /** Precio con la lista del cliente (sin oferta). */
   precio: number;
+  /** % de oferta vigente y precio final (null = sin oferta). */
+  descuentoPct: number | null;
+  precioOferta: number | null;
   unidadesPorBulto: number | null;
   seDivideEn: number | null;
   imageUrl: string | null;
+}
+
+export interface OfertaApp {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  imagenUrl: string | null;
+  descuentoPct: number | null;
+  producto: ProductoApp | null;
 }
 
 export interface PaginaCatalogo {
@@ -43,6 +56,8 @@ export interface LineaCotizada {
   name: string;
   quantity: number;
   price: number;
+  /** % de oferta aplicado a la línea (null = sin oferta). */
+  itemDiscount: number | null;
   subtotal: number;
   unidadesPorBulto: number | null;
 }

@@ -90,6 +90,11 @@ export default function Pedido() {
                     <T v="chico" style={{ fontSize: 12 }}>
                       {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {srv ? precio(srv.price) : '…'} c/u
                     </T>
+                    {srv?.itemDiscount ? (
+                      <View style={{ marginTop: 4 }}>
+                        <Insignia texto={`Oferta −${srv.itemDiscount}%`} bg={colors.tealSoft} fg={colors.tealInk} borde={colors.tealLine} />
+                      </View>
+                    ) : null}
                   </View>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

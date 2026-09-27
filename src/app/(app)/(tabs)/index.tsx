@@ -3,10 +3,11 @@ import { router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { EstadoPedidoInsignia } from '@/components/estado-pedido';
+import { OfertasInicio } from '@/components/ofertas-inicio';
 import { Chip, Icono, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaCorta, precio } from '@/lib/format';
-import { useCuenta, usePedidos, useRubros } from '@/lib/queries';
+import { useCuenta, usePedidos } from '@/lib/queries';
 import { useCarritoStore } from '@/state/carrito';
 import { useComercioStore } from '@/state/comercio';
 import { colors, radius, tarjetaBase, tint } from '@/theme';
@@ -35,7 +36,6 @@ export default function Inicio() {
   const setSlugActivo = useComercioStore((s) => s.setSlugActivo);
   const cuenta = useCuenta(slug!);
   const pedidos = usePedidos(slug!);
-  const rubros = useRubros(slug!);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
 
   const ultimo = pedidos.data?.[0];
@@ -108,21 +108,12 @@ export default function Inicio() {
           </Pressable>
         )}
 
+        <OfertasInicio slug={slug!} accent={accent} />
+
         <T v="h2" style={{ marginTop: 4 }}>Accesos rápidos</T>
         <Acceso icono="package-variant-closed" titulo="Hacer un pedido" detalle="Buscá por nombre, código o código de barras" accent={accent} onPress={() => router.navigate('/catalogo')} />
         {ultimo && <Acceso icono="repeat" titulo="Repetir último pedido" detalle="Se carga en el carrito con los precios de hoy" accent={accent} onPress={repetirUltimo} />}
         <Acceso icono="clipboard-list-outline" titulo="Mis pedidos" detalle="Estado y seguimiento" accent={accent} onPress={() => router.navigate('/pedidos')} />
-
-        {(rubros.data?.length ?? 0) > 0 && (
-          <>
-            <T v="h2" style={{ marginTop: 4 }}>Rubros</T>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {rubros.data!.slice(0, 12).map((r) => (
-                <Chip key={r} texto={r} color={accent} onPress={() => router.navigate({ pathname: '/catalogo', params: { rubro: r } })} />
-              ))}
-            </View>
-          </>
-        )}
       </ScrollView>
     </View>
   );

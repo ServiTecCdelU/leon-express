@@ -23,20 +23,23 @@ function useDebounce<T>(valor: T, ms: number): T {
 
 export default function Catalogo() {
   const { comercio, slug, accent } = useComercioActivo();
-  const params = useLocalSearchParams<{ rubro?: string }>();
+  const params = useLocalSearchParams<{ rubro?: string; ofertas?: string }>();
   const rubroParam = typeof params.rubro === 'string' ? params.rubro : '';
   const [rubro, setRubro] = useState(rubroParam);
   // Llegar desde un rubro del inicio preselecciona el filtro (ajuste durante el render,
   // no en un efecto: https://react.dev/learn/you-might-not-need-an-effect).
-  const [ultimoParam, setUltimoParam] = useState(rubroParam);
-  if (rubroParam !== ultimoParam) {
-    setUltimoParam(rubroParam);
+  const ofertasParam = params.ofertas === '1';
+  const [soloOfertas, setSoloOfertas] = useState(ofertasParam);
+  const [ultimoParam, setUltimoParam] = useState(`${rubroParam}|${ofertasParam}`);
+  if (`${rubroParam}|${ofertasParam}` !== ultimoParam) {
+    setUltimoParam(`${rubroParam}|${ofertasParam}`);
     setRubro(rubroParam);
+    setSoloOfertas(ofertasParam);
   }
   const [texto, setTexto] = useState('');
   const q = useDebounce(texto.trim(), 350);
 
-  const catalogo = useCatalogo(slug!, q, rubro);
+  const catalogo = useCatalogo(slug!, q, rubro, soloOfertas);
   const rubros = useRubros(slug!);
   const carrito = useCarrito(slug);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
@@ -50,7 +53,7 @@ export default function Catalogo() {
     (p: ProductoApp, cantidad: number) =>
       setCantidad(
         slug!,
-        { productId: p.id, nombre: p.nombre, rubro: p.rubro, precioReferencia: p.precio, unidadesPorBulto: p.unidadesPorBulto, seDivideEn: p.seDivideEn },
+        { productId: p.id, nombre: p.nombre, rubro: p.rubro, precioReferencia: p.precioOferta ?? p.precio, unidadesPorBulto: p.unidadesPorBulto, seDivideEn: p.seDivideEn },
         cantidad,
       ),
     [setCantidad, slug],
@@ -78,7 +81,8 @@ export default function Catalogo() {
           ) : null}
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 2 }}>
-          <Chip texto="Todos" activo={!rubro} color={accent} onPress={() => setRubro('')} />
+          <Chip texto="Todos" activo={!rubro && !soloOfertas} color={accent} onPress={() => { setRubro(''); setSoloOfertas(false); }} />
+          <Chip texto="Ofertas" activo={soloOfertas} color={accent} onPress={() => setSoloOfertas(!soloOfertas)} />
           {(rubros.data ?? []).map((r) => (
             <Chip key={r} texto={r} activo={rubro === r} color={accent} onPress={() => setRubro(rubro === r ? '' : r)} />
           ))}
@@ -104,7 +108,7 @@ export default function Catalogo() {
           ListFooterComponent={catalogo.isFetchingNextPage ? <Cargando /> : null}
           ListEmptyComponent={
             <T v="chico" style={{ textAlign: 'center', paddingTop: 30 }}>
-              {q ? `No encontramos "${q}".` : 'No hay productos en este rubro.'}
+              {q ? `No encontramos "${q}".` : soloOfertas ? 'No hay ofertas vigentes.' : 'No hay productos en este rubro.'}
             </T>
           }
           keyboardShouldPersistTaps="handled"
