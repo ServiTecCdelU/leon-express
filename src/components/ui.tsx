@@ -198,33 +198,6 @@ export function FichaProducto({ iniciales, color = ACCENT_DEFAULT, size = 56 }: 
   );
 }
 
-export function Stepper({
-  cantidad,
-  onMenos,
-  onMas,
-  color = ACCENT_DEFAULT,
-}: {
-  cantidad: number;
-  onMenos: () => void;
-  onMas: () => void;
-  color?: string;
-}) {
-  const boton = { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' } as const;
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Quitar uno" onPress={onMenos} style={boton}>
-        <Icono name={cantidad === 1 ? 'trash-can-outline' : 'minus'} color={colors.inkSoft} size={18} />
-      </Pressable>
-      <T v="fuerte" style={{ minWidth: 34, textAlign: 'center', color }} accessibilityLabel={`Cantidad ${cantidad}`}>
-        {cantidad}
-      </T>
-      <Pressable accessibilityRole="button" accessibilityLabel="Sumar uno" onPress={onMas} style={boton}>
-        <Icono name="plus" color={color} size={18} />
-      </Pressable>
-    </View>
-  );
-}
-
 export function Cargando() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>

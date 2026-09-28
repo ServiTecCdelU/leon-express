@@ -12,6 +12,7 @@ export const supabase = createClient(env.supabaseUrl, env.supabaseKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    flowType: 'pkce',
   },
 });
 

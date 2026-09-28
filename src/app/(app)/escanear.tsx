@@ -6,7 +6,8 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Vibration, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Aviso, Boton, Cargando, FichaProducto, Icono, Insignia, Stepper, T } from '@/components/ui';
+import { DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
+import { Aviso, Boton, Cargando, FichaProducto, Icono, Insignia, T } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { api, ApiError } from '@/lib/api';
 import { iniciales, precio, presentacion } from '@/lib/format';
@@ -54,7 +55,7 @@ export default function Escanear() {
     try {
       const r = await qc.fetchQuery({
         queryKey: ['escanear', slug, codigo],
-        queryFn: () => api<{ codigo: string; productos: ProductoApp[] }>(`/comercios/${slug}/escanear?codigo=${encodeURIComponent(codigo)}`),
+        queryFn: () => api<{ codigo: string; productos: ProductoApp[] }>(`/comercios/${slug}/escanear?codigo=${encodeURIComponent(codigo)}`, { auth: 'opcional' }),
         staleTime: 60_000,
       });
       setEstado({ tipo: 'resultado', codigo, productos: r.productos });
@@ -218,7 +219,10 @@ export default function Escanear() {
                   Subtotal {precio((elegido.precioOferta ?? elegido.precio) * cantidad)}
                 </T>
               </View>
-              <Stepper cantidad={cantidad} color={accent} onMenos={() => setCantidad(Math.max(1, cantidad - 1))} onMas={() => setCantidad(cantidad + 1)} />
+              <View style={{ alignItems: 'center', gap: 2 }}>
+                <SelectorCantidad cantidad={cantidad} color={accent} nombre={elegido.nombre} onCambiar={(n) => setCantidad(Math.max(1, n))} />
+                <DetalleCantidad cantidad={cantidad} unidadesPorBulto={elegido.unidadesPorBulto} seDivideEn={elegido.seDivideEn} />
+              </View>
             </View>
 
             {carrito[elegido.id] ? (

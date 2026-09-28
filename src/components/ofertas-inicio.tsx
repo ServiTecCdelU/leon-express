@@ -4,7 +4,8 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { FlatList, Pressable, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { useAnchoApp } from '@/components/marco-celular';
 import { Boton, Icono, Insignia, T } from '@/components/ui';
 import { precio } from '@/lib/format';
 import { useOfertas } from '@/lib/queries';
@@ -21,7 +22,7 @@ export function OfertasInicio({ slug, accent }: { slug: string; accent: string }
   const ofertas = useOfertas(slug);
   const carrito = useCarrito(slug);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
-  const { width } = useWindowDimensions();
+  const width = useAnchoApp();
   const ancho = width - PADDING * 2;
   const paso = ancho + GAP;
 

@@ -1,20 +1,32 @@
 // Comercio activo (el que eligió la persona, o el primero de sus vínculos) + su color.
-import { useMe } from '@/lib/queries';
+// Sin comercio vinculado pero con la distribuidora del QR elegida → modo visitante:
+// ve catálogo y ofertas de esa distribuidora hasta registrarse y vincularse.
+import { useComercioPublico, useMe } from '@/lib/queries';
+import type { Comercio } from '@/lib/tipos';
 import { useComercioStore } from '@/state/comercio';
+import { useSesion } from '@/state/sesion';
 import { ACCENT_DEFAULT } from '@/theme';
 
 export function useComercioActivo() {
-  const me = useMe();
+  const { session } = useSesion();
+  const me = useMe(!!session);
   const slugActivo = useComercioStore((s) => s.slugActivo);
-  const comercios = me.data?.comercios ?? [];
-  const comercio = comercios.find((c) => c.slug === slugActivo) ?? comercios[0] ?? null;
+  const distribuidora = useComercioStore((s) => s.distribuidora);
+  const comercios = session ? (me.data?.comercios ?? []) : [];
+  const vinculado = comercios.find((c) => c.slug === slugActivo) ?? comercios[0] ?? null;
+  const visitante = !vinculado && !!distribuidora;
+  const publico = useComercioPublico(visitante ? (distribuidora ?? undefined) : undefined);
+  const comercio: Comercio | null = vinculado ?? (visitante ? (publico.data ?? { slug: distribuidora!, nombre: '', logoUrl: null, colorPrimario: null }) : null);
+
   return {
     comercio,
     comercios,
     slug: comercio?.slug ?? null,
+    visitante,
+    conSesion: !!session,
     accent: comercio?.colorPrimario || ACCENT_DEFAULT,
-    cargando: me.isLoading,
-    error: me.error,
+    cargando: !!session && me.isLoading,
+    error: session ? me.error : null,
     refetch: me.refetch,
   };
 }

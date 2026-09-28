@@ -16,14 +16,15 @@ const TIMEOUT_MS = 20_000;
 
 export async function api<T>(
   path: string,
-  opts: { method?: 'GET' | 'POST'; body?: unknown; auth?: boolean } = {},
+  // auth: true exige sesión; 'opcional' la manda si hay (lecturas que ve un visitante).
+  opts: { method?: 'GET' | 'POST'; body?: unknown; auth?: boolean | 'opcional' } = {},
 ): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (opts.auth !== false) {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
-    if (!token) throw new ApiError(401, 'Tu sesión venció. Volvé a ingresar.');
-    headers.Authorization = `Bearer ${token}`;
+    if (token) headers.Authorization = `Bearer ${token}`;
+    else if (opts.auth !== 'opcional') throw new ApiError(401, 'Tu sesión venció. Volvé a ingresar.');
   }
 
   const controller = new AbortController();

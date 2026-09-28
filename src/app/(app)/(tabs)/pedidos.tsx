@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { EstadoPedidoInsignia } from '@/components/estado-pedido';
+import { BannerRegistro } from '@/components/registro';
 import { Aviso, Cargando, Icono, T } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaCorta, precio } from '@/lib/format';
@@ -10,13 +11,18 @@ import { usePedidos } from '@/lib/queries';
 import { colors, tarjetaBase } from '@/theme';
 
 export default function MisPedidos() {
-  const { slug, accent } = useComercioActivo();
-  const pedidos = usePedidos(slug!);
+  const { slug, accent, visitante, conSesion } = useComercioActivo();
+  const pedidos = usePedidos(slug!, !visitante);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <BarraSuperior titulo="Pedidos" subtitulo="Tus pedidos y su estado" color={accent} />
-      {pedidos.isLoading ? (
+      {visitante ? (
+        <View style={{ padding: 16, gap: 12 }}>
+          <BannerRegistro conSesion={conSesion} accent={accent} />
+          <T v="chico" style={{ textAlign: 'center', paddingTop: 12 }}>Cuando te registres vas a ver acá tus pedidos y su estado.</T>
+        </View>
+      ) : pedidos.isLoading ? (
         <Cargando />
       ) : pedidos.error ? (
         <View style={{ padding: 16 }}><Aviso texto={pedidos.error.message} /></View>

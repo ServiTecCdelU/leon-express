@@ -10,8 +10,10 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { MarcoCelular } from '@/components/marco-celular';
 import { useHidratado } from '@/hooks/use-hidratado';
 import { ApiError } from '@/lib/api';
+import { useComercioStore } from '@/state/comercio';
 import { SesionProvider, useSesion } from '@/state/sesion';
 import { colors } from '@/theme';
 
@@ -30,6 +32,7 @@ const queryClient = new QueryClient({
 
 function Navegacion() {
   const { session, cargando } = useSesion();
+  const distribuidora = useComercioStore((s) => s.distribuidora);
   const [fuentes, errorFuentes] = useFonts({
     Geist_400Regular,
     Geist_500Medium,
@@ -53,14 +56,22 @@ function Navegacion() {
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-      {/* Destino del QR/link de invitación: accesible con o sin sesión. */}
-      <Stack.Screen name="invitacion" />
+      {/* El orden importa: si la ruta actual queda protegida se va a la primera disponible. */}
+      <Stack.Protected guard={!session && !distribuidora}>
+        <Stack.Screen name="bienvenida" />
+      </Stack.Protected>
+      {/* Con sesión, o como visitante de la distribuidora cuyo QR escaneó. */}
+      <Stack.Protected guard={!!session || !!distribuidora}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="ingresar" />
       </Stack.Protected>
-      <Stack.Protected guard={!!session}>
-        <Stack.Screen name="(app)" />
-      </Stack.Protected>
+      {/* Destinos de QR/links y del ingreso con Google: accesibles con o sin sesión. */}
+      <Stack.Screen name="invitacion" />
+      <Stack.Screen name="a/[slug]" />
+      <Stack.Screen name="auth/callback" />
+      <Stack.Screen name="escanear-qr" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
     </Stack>
   );
 }
@@ -70,7 +81,9 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <SesionProvider>
         <StatusBar style="dark" />
-        <Navegacion />
+        <MarcoCelular>
+          <Navegacion />
+        </MarcoCelular>
       </SesionProvider>
     </QueryClientProvider>
   );

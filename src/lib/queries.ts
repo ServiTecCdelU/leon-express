@@ -48,7 +48,7 @@ export function useCatalogo(slug: string, q: string, rubro: string, soloOfertas 
       if (q) params.set('q', q);
       if (rubro) params.set('rubro', rubro);
       if (soloOfertas) params.set('soloOfertas', '1');
-      return api<PaginaCatalogo>(`/comercios/${slug}/catalogo?${params}`);
+      return api<PaginaCatalogo>(`/comercios/${slug}/catalogo?${params}`, { auth: 'opcional' });
     },
     getNextPageParam: (ultima) => (ultima.page < ultima.totalPages ? ultima.page + 1 : undefined),
   });
@@ -57,7 +57,7 @@ export function useCatalogo(slug: string, q: string, rubro: string, soloOfertas 
 export function useOfertas(slug: string) {
   return useQuery({
     queryKey: qk.ofertas(slug),
-    queryFn: () => api<OfertaApp[]>(`/comercios/${slug}/ofertas`),
+    queryFn: () => api<OfertaApp[]>(`/comercios/${slug}/ofertas`, { auth: 'opcional' }),
     staleTime: 5 * 60_000,
   });
 }
@@ -65,32 +65,33 @@ export function useOfertas(slug: string) {
 export function useRubros(slug: string) {
   return useQuery({
     queryKey: qk.rubros(slug),
-    queryFn: () => api<string[]>(`/comercios/${slug}/rubros`),
+    queryFn: () => api<string[]>(`/comercios/${slug}/rubros`, { auth: 'opcional' }),
     staleTime: 10 * 60_000,
   });
 }
 
-export function useCotizacion(slug: string, items: { productId: string; quantity: number }[]) {
+export function useCotizacion(slug: string, items: { productId: string; quantity: number }[], habilitada = true) {
   const clave = items.map((i) => `${i.productId}:${i.quantity}`).sort().join('|');
   return useQuery({
     queryKey: qk.cotizacion(slug, clave),
     queryFn: () => api<Cotizacion>(`/comercios/${slug}/cotizar`, { method: 'POST', body: { items } }),
-    enabled: items.length > 0,
+    enabled: habilitada && items.length > 0,
     placeholderData: (prev) => prev,
     staleTime: 30_000,
   });
 }
 
-export function usePedidos(slug: string) {
+export function usePedidos(slug: string, enabled = true) {
   return useQuery({
     queryKey: qk.pedidos(slug),
+    enabled,
     queryFn: () => api<PedidoResumen[]>(`/comercios/${slug}/pedidos`),
     refetchInterval: 60_000,
   });
 }
 
-export function useCuenta(slug: string) {
-  return useQuery({ queryKey: qk.cuenta(slug), queryFn: () => api<Cuenta>(`/comercios/${slug}/cuenta`) });
+export function useCuenta(slug: string, enabled = true) {
+  return useQuery({ queryKey: qk.cuenta(slug), queryFn: () => api<Cuenta>(`/comercios/${slug}/cuenta`), enabled });
 }
 
 export function useCrearPedido(slug: string) {
@@ -110,6 +111,16 @@ export function useCanjearInvitacion() {
   return useMutation({
     mutationFn: (token: string) =>
       api<{ slug: string; nombre: string }>('/invitaciones/canjear', { method: 'POST', body: { token } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me }),
+    // Al vincular cambia la lista de precios (la del cliente): se refresca todo.
+    onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+/** Alta sin invitación en la distribuidora del QR: crea la ficha y vincula la cuenta. */
+export function useAltaQr() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slug: string) => api<{ slug: string; nombre: string }>(`/comercios/${encodeURIComponent(slug)}/alta`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries(),
   });
 }

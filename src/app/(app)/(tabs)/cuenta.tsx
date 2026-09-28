@@ -1,13 +1,15 @@
-// Cuenta: saldo y crédito, datos del comercio, cerrar sesión. Movimientos e "informar pago"
+// Cuenta: saldo y crédito, datos del comercio, cerrar sesión (o registrarse, si es visitante). Movimientos e "informar pago"
 // llegan en la Fase 2 (la API todavía no los expone).
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { PieServiTec } from '@/components/pie-servitec';
+import { BannerRegistro } from '@/components/registro';
 import { Aviso, Boton, Cargando, Fila, Insignia, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { precio } from '@/lib/format';
 import { useCuenta, useMe } from '@/lib/queries';
 import { supabase } from '@/lib/supabase';
+import { useComercioStore } from '@/state/comercio';
 import { colors } from '@/theme';
 
 const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; borde: string }> = {
@@ -16,7 +18,41 @@ const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; bor
   moroso: { texto: 'Saldo vencido', bg: colors.errorSoft, fg: colors.errorInk, borde: colors.errorLine },
 };
 
+// Visitante (entró por el QR): registrarse, cambiar de distribuidora y salir.
+function CuentaVisitante() {
+  const { accent, comercio, conSesion } = useComercioActivo();
+  const setDistribuidora = useComercioStore((s) => s.setDistribuidora);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <BarraSuperior titulo="Cuenta" subtitulo={comercio?.nombre} color={accent} />
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
+        <BannerRegistro conSesion={conSesion} accent={accent} />
+        <Tarjeta style={{ gap: 8 }}>
+          <T v="etiqueta">Estás viendo</T>
+          <T v="fuerte">{comercio?.nombre}</T>
+          <T v="chico">Precios de referencia. Al registrarte ves los tuyos y podés hacer pedidos.</T>
+        </Tarjeta>
+        <Boton variante="borde" icono="qrcode-scan" onPress={() => setDistribuidora(null)}>
+          Cambiar de distribuidora
+        </Boton>
+        {conSesion && (
+          <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()}>
+            Cerrar sesión
+          </Boton>
+        )}
+        <PieServiTec />
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function Cuenta() {
+  const { visitante } = useComercioActivo();
+  return visitante ? <CuentaVisitante /> : <CuentaCliente />;
+}
+
+function CuentaCliente() {
   const { slug, accent, comercio } = useComercioActivo();
   const cuenta = useCuenta(slug!);
   const me = useMe();

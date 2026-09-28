@@ -1,15 +1,17 @@
-// Productos: catálogo paginado con búsqueda, filtro por rubro y cantidades.
+// Productos: catálogo paginado con búsqueda (nombre, código o código de barras), filtro
+// por rubro, vista lista o cuadrícula (se recuerda) y cantidades tipeables.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
-import { ProductoFila } from '@/components/producto-fila';
+import { ProductoFila, ProductoTarjeta } from '@/components/producto-fila';
 import { Aviso, Boton, Cargando, Chip, Icono, T } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { precio } from '@/lib/format';
 import { useCatalogo, useRubros } from '@/lib/queries';
 import type { ProductoApp } from '@/lib/tipos';
 import { useCarrito, useCarritoStore } from '@/state/carrito';
+import { usePreferencias } from '@/state/preferencias';
 import { colors, fonts, radius } from '@/theme';
 
 function useDebounce<T>(valor: T, ms: number): T {
@@ -43,6 +45,8 @@ export default function Catalogo() {
   const rubros = useRubros(slug!);
   const carrito = useCarrito(slug);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
+  const { vista, setVista } = usePreferencias();
+  const grilla = vista === 'cuadricula';
 
   const productos = useMemo(() => catalogo.data?.pages.flatMap((p) => p.items) ?? [], [catalogo.data]);
   const total = catalogo.data?.pages[0]?.total;
@@ -63,29 +67,39 @@ export default function Catalogo() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <BarraSuperior titulo="Productos" subtitulo={total !== undefined ? `${total} productos · ${comercio?.nombre ?? ''}` : comercio?.nombre} color={accent} />
       <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, paddingHorizontal: 12 }}>
-          <Icono name="magnify" color={colors.muted} size={18} />
-          <TextInput
-            accessibilityLabel="Buscar producto"
-            value={texto}
-            onChangeText={setTexto}
-            placeholder="Buscar por nombre, código o código de barras"
-            placeholderTextColor={colors.muted}
-            returnKeyType="search"
-            style={{ flex: 1, fontSize: 15, fontFamily: fonts.body, color: colors.ink }}
-          />
-          {texto ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setTexto('')} hitSlop={10}>
-              <Icono name="close-circle" color={colors.muted} size={18} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, paddingHorizontal: 12 }}>
+            <Icono name="magnify" color={colors.muted} size={18} />
+            <TextInput
+              accessibilityLabel="Buscar producto"
+              value={texto}
+              onChangeText={setTexto}
+              placeholder="Buscar por nombre, código o código de barras"
+              placeholderTextColor={colors.muted}
+              returnKeyType="search"
+              style={{ flex: 1, fontSize: 15, fontFamily: fonts.body, color: colors.ink }}
+            />
+            {texto ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setTexto('')} hitSlop={10}>
+                <Icono name="close-circle" color={colors.muted} size={18} />
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Escanear código de barras"
+              onPress={() => router.push('/escanear')}
+              style={{ marginRight: -6, width: 36, height: 36, borderRadius: radius.sm, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Icono name="barcode-scan" color={colors.white} size={20} />
             </Pressable>
-          ) : null}
+          </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Escanear código de barras"
-            onPress={() => router.push('/escanear')}
-            style={{ marginRight: -6, width: 36, height: 36, borderRadius: radius.sm, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}
+            accessibilityLabel={grilla ? 'Ver en lista' : 'Ver en cuadrícula'}
+            onPress={() => setVista(grilla ? 'lista' : 'cuadricula')}
+            style={{ width: 44, height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Icono name="barcode-scan" color={colors.white} size={20} />
+            <Icono name={grilla ? 'view-list-outline' : 'view-grid-outline'} color={accent} size={22} />
           </Pressable>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 2 }}>
@@ -105,12 +119,20 @@ export default function Catalogo() {
         </View>
       ) : (
         <FlatList
+          // numColumns no puede cambiar en caliente: la key fuerza a rearmar la lista.
+          key={vista}
           data={productos}
           keyExtractor={(p) => p.id}
+          numColumns={grilla ? 2 : 1}
+          columnWrapperStyle={grilla ? { gap: 8 } : undefined}
           contentContainerStyle={{ padding: 16, paddingTop: 10, gap: 8, paddingBottom: lineas.length ? 100 : 24 }}
-          renderItem={({ item }) => (
-            <ProductoFila producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
-          )}
+          renderItem={({ item }) =>
+            grilla ? (
+              <ProductoTarjeta producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
+            ) : (
+              <ProductoFila producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
+            )
+          }
           onEndReached={() => catalogo.hasNextPage && !catalogo.isFetchingNextPage && catalogo.fetchNextPage()}
           onEndReachedThreshold={0.5}
           ListFooterComponent={catalogo.isFetchingNextPage ? <Cargando /> : null}

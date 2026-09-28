@@ -1,17 +1,20 @@
 // Carrito: precios y total vienen de /cotizar (servidor); confirmar reusa el mismo
-// clientRequestId en cada reintento (el servidor no duplica).
+// clientRequestId en cada reintento (el servidor no duplica). El visitante arma el carrito
+// con precios de referencia y al confirmar se le pide registrarse.
 import * as Crypto from 'expo-crypto';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraSuperior } from '@/components/barra-superior';
-import { Aviso, Boton, FichaProducto, Fila, Insignia, Stepper, T, Tarjeta } from '@/components/ui';
+import { DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
+import { Aviso, Boton, FichaProducto, Fila, Insignia, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { ApiError } from '@/lib/api';
 import { iniciales, precio, presentacion } from '@/lib/format';
 import { useCotizacion, useCrearPedido } from '@/lib/queries';
 import { useCarrito, useCarritoStore, type ItemCarrito } from '@/state/carrito';
+import { useRegistroStore } from '@/state/registro';
 import { colors, fonts, radius } from '@/theme';
 
 const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; borde: string }> = {
@@ -21,7 +24,8 @@ const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; bor
 };
 
 export default function Pedido() {
-  const { slug, accent } = useComercioActivo();
+  const { slug, accent, visitante } = useComercioActivo();
+  const pedirRegistro = useRegistroStore((s) => s.abrir);
   const insets = useSafeAreaInsets();
   const carrito = useCarrito(slug);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
@@ -32,7 +36,7 @@ export default function Pedido() {
 
   const lineas = useMemo(() => Object.values(carrito), [carrito]);
   const items = useMemo(() => lineas.map((l) => ({ productId: l.productId, quantity: l.cantidad })), [lineas]);
-  const cot = useCotizacion(slug!, items);
+  const cot = useCotizacion(slug!, items, !visitante);
   const crear = useCrearPedido(slug!);
 
   const precioServidor = new Map((cot.data?.lineas ?? []).map((l) => [l.productId, l]));
@@ -70,7 +74,7 @@ export default function Pedido() {
   }
 
   const credito = cot.data?.credito;
-  const total = cot.data?.total;
+  const total = visitante ? lineas.reduce((acc, l) => acc + l.precioReferencia * l.cantidad, 0) : cot.data?.total;
   const clasif = CLASIFICACION[credito?.clasificacion ?? 'normal'] ?? CLASIFICACION.atrasado;
 
   return (
@@ -88,7 +92,7 @@ export default function Pedido() {
                   <View style={{ flex: 1 }}>
                     <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{l.nombre}</T>
                     <T v="chico" style={{ fontSize: 12 }}>
-                      {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {srv ? precio(srv.price) : '…'} c/u
+                      {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {srv ? precio(srv.price) : visitante ? precio(l.precioReferencia) : '…'} c/u
                     </T>
                     {srv?.itemDiscount ? (
                       <View style={{ marginTop: 4 }}>
@@ -101,15 +105,19 @@ export default function Pedido() {
                   {conError ? (
                     <Insignia texto="Ya no está disponible" bg={colors.errorSoft} fg={colors.errorInk} borde={colors.errorLine} />
                   ) : (
-                    <T v="numero" style={{ fontSize: 15 }}>{srv ? precio(srv.subtotal) : '…'}</T>
+                    <T v="numero" style={{ fontSize: 15 }}>{srv ? precio(srv.subtotal) : visitante ? precio(l.precioReferencia * l.cantidad) : '…'}</T>
                   )}
-                  <Stepper cantidad={l.cantidad} color={accent} onMenos={() => cambiar(l, l.cantidad - 1)} onMas={() => cambiar(l, l.cantidad + 1)} />
+                  <View style={{ alignItems: 'center', gap: 2 }}>
+                    <SelectorCantidad cantidad={l.cantidad} color={accent} nombre={l.nombre} onCambiar={(n) => cambiar(l, n)} />
+                    <DetalleCantidad cantidad={l.cantidad} unidadesPorBulto={l.unidadesPorBulto} seDivideEn={l.seDivideEn} />
+                  </View>
                 </View>
               </View>
             );
           })}
         </Tarjeta>
 
+        {visitante && <Aviso tono="info" texto="Precios de referencia. Al registrarte se confirman con tu lista de precios." />}
         {cot.error && <Aviso texto={cot.error.message} />}
         {cot.data?.retencion && <Aviso tono="info" texto={cot.data.retencion} />}
 
@@ -149,9 +157,15 @@ export default function Pedido() {
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.line, padding: 16, paddingBottom: 16 + Math.min(insets.bottom, 8), gap: 8 }}>
         {crear.error && <Aviso texto={crear.error.message} />}
-        <Boton color={accent} icono="check" onPress={confirmar} cargando={crear.isPending} disabled={!cot.data || cot.isFetching || !!cot.error}>
-          Confirmar pedido{total !== undefined ? ` · ${precio(total)}` : ''}
-        </Boton>
+        {visitante ? (
+          <Boton color={accent} icono="account-plus-outline" onPress={() => pedirRegistro('Registrate para enviar tu pedido. Tu carrito queda guardado.')}>
+            Registrarme y enviar{total !== undefined ? ` · ${precio(total)}` : ''}
+          </Boton>
+        ) : (
+          <Boton color={accent} icono="check" onPress={confirmar} cargando={crear.isPending} disabled={!cot.data || cot.isFetching || !!cot.error}>
+            Confirmar pedido{total !== undefined ? ` · ${precio(total)}` : ''}
+          </Boton>
+        )}
       </View>
     </View>
   );

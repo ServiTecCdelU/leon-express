@@ -1,9 +1,11 @@
-// Inicio: resumen tipo dashboard del panel (saldo, último pedido, accesos, rubros).
+// Inicio: resumen tipo dashboard del panel (ofertas, último pedido, accesos). Al visitante
+// (entró por el QR, todavía sin registrarse) le suma el banner "Registrarme".
 import { router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { EstadoPedidoInsignia } from '@/components/estado-pedido';
 import { OfertasInicio } from '@/components/ofertas-inicio';
+import { BannerRegistro } from '@/components/registro';
 import { Chip, Icono, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaCorta, precio } from '@/lib/format';
@@ -32,10 +34,10 @@ function Acceso({ icono, titulo, detalle, accent, onPress }: { icono: IconName; 
 }
 
 export default function Inicio() {
-  const { comercio, comercios, slug, accent } = useComercioActivo();
+  const { comercio, comercios, slug, accent, visitante, conSesion } = useComercioActivo();
   const setSlugActivo = useComercioStore((s) => s.setSlugActivo);
-  const cuenta = useCuenta(slug!);
-  const pedidos = usePedidos(slug!);
+  const cuenta = useCuenta(slug!, !visitante);
+  const pedidos = usePedidos(slug!, !visitante);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
 
   const ultimo = pedidos.data?.[0];
@@ -72,6 +74,8 @@ export default function Inicio() {
             ))}
           </ScrollView>
         )}
+
+        {visitante && <BannerRegistro conSesion={conSesion} accent={accent} />}
 
         <OfertasInicio slug={slug!} accent={accent} />
 
