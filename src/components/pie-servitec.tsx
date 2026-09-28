@@ -3,9 +3,9 @@ import { Linking, Pressable, View } from 'react-native';
 import { Icono, T } from '@/components/ui';
 import { ACCENT_DEFAULT, colors, fonts, radius } from '@/theme';
 
-const TELEFONO_VISIBLE = '3442 533465';
-const TELEFONO_E164 = '+543442533465';
-const WHATSAPP = 'https://wa.me/5493442533465?text=' + encodeURIComponent('Hola ServiTec, quiero información sobre el Sistema de Gestión.');
+const TELEFONO_VISIBLE = '3442 646670';
+const TELEFONO_E164 = '+5493442646670';
+const WHATSAPP = 'https://wa.me/5493442646670?text=' + encodeURIComponent('Hola ServiTec, quiero información sobre el Sistema de Gestión.');
 
 export function PieServiTec() {
   return (
