@@ -8,10 +8,11 @@ import { ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraSuperior } from '@/components/barra-superior';
 import { DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
-import { Aviso, Boton, FichaProducto, Fila, Insignia, T, Tarjeta } from '@/components/ui';
+import { FotoProducto } from '@/components/foto-producto';
+import { Aviso, Boton, Fila, Insignia, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { ApiError } from '@/lib/api';
-import { iniciales, precio, presentacion } from '@/lib/format';
+import { precio, presentacion } from '@/lib/format';
 import { useCotizacion, useCrearPedido } from '@/lib/queries';
 import { useCarrito, useCarritoStore, type ItemCarrito } from '@/state/carrito';
 import { useRegistroStore } from '@/state/registro';
@@ -88,7 +89,7 @@ export default function Pedido() {
             return (
               <View key={l.productId} style={{ padding: 12, gap: 10, borderTopWidth: i ? 1 : 0, borderTopColor: colors.lineSoft, backgroundColor: conError ? colors.errorSoft : undefined }}>
                 <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                  <FichaProducto iniciales={iniciales(l.nombre)} color={accent} size={40} />
+                  <FotoProducto nombre={l.nombre} imagenUrl={l.imageUrl} color={accent} size={40} />
                   <View style={{ flex: 1 }}>
                     <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{l.nombre}</T>
                     <T v="chico" style={{ fontSize: 12 }}>

@@ -13,7 +13,10 @@ export function useComercioActivo() {
   const slugActivo = useComercioStore((s) => s.slugActivo);
   const distribuidora = useComercioStore((s) => s.distribuidora);
   const comercios = session ? (me.data?.comercios ?? []) : [];
-  const vinculado = comercios.find((c) => c.slug === slugActivo) ?? comercios[0] ?? null;
+  // El último QR escaneado manda: si esa distribuidora todavía no está vinculada se la ve
+  // como visitante (mientras corre el alta automática), no otro comercio de la cuenta.
+  const qrSinVincular = !!distribuidora && !comercios.some((c) => c.slug === distribuidora);
+  const vinculado = qrSinVincular ? null : (comercios.find((c) => c.slug === slugActivo) ?? comercios[0] ?? null);
   const visitante = !vinculado && !!distribuidora;
   const publico = useComercioPublico(visitante ? (distribuidora ?? undefined) : undefined);
   const comercio: Comercio | null = vinculado ?? (visitante ? (publico.data ?? { slug: distribuidora!, nombre: '', logoUrl: null, colorPrimario: null }) : null);

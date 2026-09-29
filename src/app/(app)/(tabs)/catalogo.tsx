@@ -1,14 +1,17 @@
 // Productos: catálogo paginado con búsqueda (nombre, código o código de barras), filtro
-// por rubro, vista lista o cuadrícula (se recuerda) y cantidades tipeables.
+// por rubro (chips con ícono + hoja con todos), vista lista o cuadrícula (se recuerda)
+// y cantidades tipeables. Desde el inicio llega con ?q=, ?rubro=, ?ofertas=1 o ?buscar=.
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { ProductoFila, ProductoTarjeta } from '@/components/producto-fila';
+import { iconoDeRubro, SelectorRubros } from '@/components/rubros';
 import { Aviso, Boton, Cargando, Chip, Icono, T } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { precio } from '@/lib/format';
 import { useCatalogo, useRubros } from '@/lib/queries';
+import { nombreRubro, rubrosVisibles } from '@/lib/rubros';
 import type { ProductoApp } from '@/lib/tipos';
 import { useCarrito, useCarritoStore } from '@/state/carrito';
 import { usePreferencias } from '@/state/preferencias';
@@ -23,26 +26,171 @@ function useDebounce<T>(valor: T, ms: number): T {
   return v;
 }
 
+const texto = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '');
+const miles = (n: number) => n.toLocaleString('es-AR');
+
+function BarraBusqueda({
+  valor,
+  onCambiar,
+  accent,
+  enfoque,
+}: {
+  valor: string;
+  onCambiar: (t: string) => void;
+  accent: string;
+  /** Cambia cada vez que el inicio pide abrir el teclado. */
+  enfoque: string;
+}) {
+  const ref = useRef<TextInput>(null);
+  const [enfocado, setEnfocado] = useState(false);
+  useEffect(() => {
+    if (enfoque) ref.current?.focus();
+  }, [enfoque]);
+  return (
+    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, borderRadius: radius.md, borderWidth: enfocado ? 2 : 1, borderColor: enfocado ? accent : colors.line, backgroundColor: colors.card, paddingLeft: enfocado ? 13 : 14, paddingRight: 6 }}>
+      <Icono name="magnify" color={enfocado ? accent : colors.muted} size={20} />
+      <TextInput
+        ref={ref}
+        accessibilityLabel="Buscar producto"
+        value={valor}
+        onChangeText={onCambiar}
+        onFocus={() => setEnfocado(true)}
+        onBlur={() => setEnfocado(false)}
+        placeholder="Buscá por nombre, marca o código"
+        placeholderTextColor={colors.muted}
+        returnKeyType="search"
+        autoCorrect={false}
+        style={{ flex: 1, fontSize: 15, fontFamily: fonts.body, color: colors.ink, outlineStyle: 'none' } as object}
+      />
+      {valor ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => onCambiar('')} hitSlop={10}>
+          <Icono name="close-circle" color={colors.muted} size={18} />
+        </Pressable>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Escanear código de barras"
+        onPress={() => router.push('/escanear')}
+        style={({ pressed }) => ({ width: 36, height: 36, borderRadius: radius.sm, backgroundColor: accent, opacity: pressed ? 0.85 : 1, alignItems: 'center', justifyContent: 'center' })}
+      >
+        <Icono name="barcode-scan" color={colors.white} size={20} />
+      </Pressable>
+    </View>
+  );
+}
+
+function Filtros({
+  rubros,
+  rubro,
+  soloOfertas,
+  accent,
+  onRubro,
+  onOfertas,
+  onVerRubros,
+}: {
+  rubros: string[];
+  rubro: string;
+  soloOfertas: boolean;
+  accent: string;
+  onRubro: (r: string) => void;
+  onOfertas: () => void;
+  onVerRubros: () => void;
+}) {
+  // El rubro elegido va primero para que se vea aunque esté al final de la lista.
+  const orden = rubro ? [rubro, ...rubros.filter((r) => r !== rubro)] : rubros;
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 2 }}>
+      <Chip texto="Rubros" icono="tune-variant" color={accent} onPress={onVerRubros} />
+      <Chip texto="Ofertas" icono="tag-outline" activo={soloOfertas} color={accent} onPress={onOfertas} />
+      {orden.map((r) => (
+        <Chip key={r} texto={nombreRubro(r)} icono={iconoDeRubro(r)} activo={rubro === r} color={accent} onPress={() => onRubro(rubro === r ? '' : r)} />
+      ))}
+    </ScrollView>
+  );
+}
+
+function Resumen({ total, q, rubro, soloOfertas, onLimpiar }: { total?: number; q: string; rubro: string; soloOfertas: boolean; onLimpiar: () => void }) {
+  if (total === undefined) return null;
+  const filtrado = !!(q || rubro || soloOfertas);
+  const partes = [q ? `para “${q}”` : '', rubro ? `en ${nombreRubro(rubro)}` : '', soloOfertas ? 'en oferta' : ''].filter(Boolean).join(' ');
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 10 }}>
+      <T v="chico" style={{ flex: 1 }} numberOfLines={1}>
+        <T v="chico" style={{ fontFamily: fonts.bodySemi, color: colors.ink }}>{miles(total)}</T>
+        {` ${total === 1 ? 'producto' : 'productos'}${partes ? ` ${partes}` : ''}`}
+      </T>
+      {filtrado && (
+        <Pressable accessibilityRole="button" onPress={onLimpiar} hitSlop={8}>
+          <T v="chico" style={{ fontFamily: fonts.bodySemi, color: colors.tealInk }}>Limpiar</T>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+function SinResultados({ q, accent, onLimpiar }: { q: string; accent: string; onLimpiar: () => void }) {
+  return (
+    <View style={{ alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 32 }}>
+      <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.lineSoft, alignItems: 'center', justifyContent: 'center' }}>
+        <Icono name="magnify" size={30} color={colors.muted} />
+      </View>
+      <T v="h2" style={{ textAlign: 'center' }}>{q ? `No encontramos “${q}”` : 'No hay productos acá'}</T>
+      <T v="chico" style={{ textAlign: 'center' }}>Probá con otra palabra, la marca o el código. También podés sacar los filtros.</T>
+      <Boton variante="suave" color={accent} chico onPress={onLimpiar}>Ver todos los productos</Boton>
+    </View>
+  );
+}
+
+function CarritoFlotante({ cantidad, total, accent }: { cantidad: number; total: number; accent: string }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Ver carrito"
+      onPress={() => router.navigate('/pedido')}
+      style={{ position: 'absolute', left: 16, right: 16, bottom: 12, height: 52, borderRadius: radius.md, backgroundColor: accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, elevation: 4, shadowColor: colors.ink, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Icono name="cart-outline" color={colors.white} size={20} />
+        <T v="fuerte" style={{ color: colors.white }}>
+          {cantidad} {cantidad === 1 ? 'producto' : 'productos'}
+        </T>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <T v="fuerte" style={{ color: colors.white }}>{precio(total)}</T>
+        <Icono name="chevron-right" color={colors.white} size={20} />
+      </View>
+    </Pressable>
+  );
+}
+
+/** Filtros que llegan por parámetro (desde el inicio): se aplican cada vez que cambian. */
+function useFiltrosDeRuta() {
+  const params = useLocalSearchParams<{ rubro?: string; ofertas?: string; q?: string; buscar?: string }>();
+  const desdeRuta = { rubro: texto(params.rubro), ofertas: params.ofertas === '1', q: texto(params.q), buscar: texto(params.buscar) };
+  const [rubro, setRubro] = useState(desdeRuta.rubro);
+  const [soloOfertas, setSoloOfertas] = useState(desdeRuta.ofertas);
+  const [busqueda, setBusqueda] = useState(desdeRuta.q);
+  // Ajuste durante el render, no en un efecto: https://react.dev/learn/you-might-not-need-an-effect
+  const clave = `${desdeRuta.rubro}|${desdeRuta.ofertas}|${desdeRuta.q}|${desdeRuta.buscar}`;
+  const [ultimaClave, setUltimaClave] = useState(clave);
+  if (clave !== ultimaClave) {
+    setUltimaClave(clave);
+    setRubro(desdeRuta.rubro);
+    setSoloOfertas(desdeRuta.ofertas);
+    setBusqueda(desdeRuta.q);
+  }
+  return { rubro, setRubro, soloOfertas, setSoloOfertas, busqueda, setBusqueda, enfoque: desdeRuta.buscar };
+}
+
 export default function Catalogo() {
   const { comercio, slug, accent } = useComercioActivo();
-  const params = useLocalSearchParams<{ rubro?: string; ofertas?: string }>();
-  const rubroParam = typeof params.rubro === 'string' ? params.rubro : '';
-  const [rubro, setRubro] = useState(rubroParam);
-  // Llegar desde un rubro del inicio preselecciona el filtro (ajuste durante el render,
-  // no en un efecto: https://react.dev/learn/you-might-not-need-an-effect).
-  const ofertasParam = params.ofertas === '1';
-  const [soloOfertas, setSoloOfertas] = useState(ofertasParam);
-  const [ultimoParam, setUltimoParam] = useState(`${rubroParam}|${ofertasParam}`);
-  if (`${rubroParam}|${ofertasParam}` !== ultimoParam) {
-    setUltimoParam(`${rubroParam}|${ofertasParam}`);
-    setRubro(rubroParam);
-    setSoloOfertas(ofertasParam);
-  }
-  const [texto, setTexto] = useState('');
-  const q = useDebounce(texto.trim(), 350);
+  const { rubro, setRubro, soloOfertas, setSoloOfertas, busqueda, setBusqueda, enfoque } = useFiltrosDeRuta();
+  const [verRubros, setVerRubros] = useState(false);
+  const q = useDebounce(busqueda.trim(), 350);
 
   const catalogo = useCatalogo(slug!, q, rubro, soloOfertas);
-  const rubros = useRubros(slug!);
+  const rubrosQuery = useRubros(slug!);
+  const rubros = useMemo(() => rubrosVisibles(rubrosQuery.data ?? []), [rubrosQuery.data]);
   const carrito = useCarrito(slug);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
   const { vista, setVista } = usePreferencias();
@@ -53,11 +201,17 @@ export default function Catalogo() {
   const lineas = Object.values(carrito);
   const estimado = lineas.reduce((acc, i) => acc + i.precioReferencia * i.cantidad, 0);
 
+  const limpiar = () => {
+    setBusqueda('');
+    setRubro('');
+    setSoloOfertas(false);
+  };
+
   const cambiar = useCallback(
     (p: ProductoApp, cantidad: number) =>
       setCantidad(
         slug!,
-        { productId: p.id, nombre: p.nombre, rubro: p.rubro, precioReferencia: p.precioOferta ?? p.precio, unidadesPorBulto: p.unidadesPorBulto, seDivideEn: p.seDivideEn },
+        { productId: p.id, nombre: p.nombre, rubro: p.rubro, precioReferencia: p.precioOferta ?? p.precio, unidadesPorBulto: p.unidadesPorBulto, seDivideEn: p.seDivideEn, imageUrl: p.imageUrl },
         cantidad,
       ),
     [setCantidad, slug],
@@ -65,51 +219,22 @@ export default function Catalogo() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <BarraSuperior titulo="Productos" subtitulo={total !== undefined ? `${total} productos · ${comercio?.nombre ?? ''}` : comercio?.nombre} color={accent} />
-      <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, paddingHorizontal: 12 }}>
-            <Icono name="magnify" color={colors.muted} size={18} />
-            <TextInput
-              accessibilityLabel="Buscar producto"
-              value={texto}
-              onChangeText={setTexto}
-              placeholder="Buscar por nombre, código o código de barras"
-              placeholderTextColor={colors.muted}
-              returnKeyType="search"
-              style={{ flex: 1, fontSize: 15, fontFamily: fonts.body, color: colors.ink }}
-            />
-            {texto ? (
-              <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setTexto('')} hitSlop={10}>
-                <Icono name="close-circle" color={colors.muted} size={18} />
-              </Pressable>
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Escanear código de barras"
-              onPress={() => router.push('/escanear')}
-              style={{ marginRight: -6, width: 36, height: 36, borderRadius: radius.sm, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Icono name="barcode-scan" color={colors.white} size={20} />
-            </Pressable>
-          </View>
+      <BarraSuperior titulo="Productos" subtitulo={comercio?.nombre} color={accent} />
+      <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.line, paddingTop: 12, paddingBottom: 12, gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 }}>
+          <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} accent={accent} enfoque={enfoque} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={grilla ? 'Ver en lista' : 'Ver en cuadrícula'}
             onPress={() => setVista(grilla ? 'lista' : 'cuadricula')}
-            style={{ width: 44, height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}
+            style={({ pressed }) => ({ width: 48, height: 48, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: pressed ? colors.lineSoft : colors.card, alignItems: 'center', justifyContent: 'center' })}
           >
             <Icono name={grilla ? 'view-list-outline' : 'view-grid-outline'} color={accent} size={22} />
           </Pressable>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 2 }}>
-          <Chip texto="Todos" activo={!rubro && !soloOfertas} color={accent} onPress={() => { setRubro(''); setSoloOfertas(false); }} />
-          <Chip texto="Ofertas" activo={soloOfertas} color={accent} onPress={() => setSoloOfertas(!soloOfertas)} />
-          {(rubros.data ?? []).map((r) => (
-            <Chip key={r} texto={r} activo={rubro === r} color={accent} onPress={() => setRubro(rubro === r ? '' : r)} />
-          ))}
-        </ScrollView>
+        <Filtros rubros={rubros} rubro={rubro} soloOfertas={soloOfertas} accent={accent} onRubro={setRubro} onOfertas={() => setSoloOfertas(!soloOfertas)} onVerRubros={() => setVerRubros(true)} />
       </View>
+      <Resumen total={total} q={q} rubro={rubro} soloOfertas={soloOfertas} onLimpiar={limpiar} />
 
       {catalogo.isLoading ? (
         <Cargando />
@@ -125,7 +250,7 @@ export default function Catalogo() {
           keyExtractor={(p) => p.id}
           numColumns={grilla ? 2 : 1}
           columnWrapperStyle={grilla ? { gap: 8 } : undefined}
-          contentContainerStyle={{ padding: 16, paddingTop: 10, gap: 8, paddingBottom: lineas.length ? 100 : 24 }}
+          contentContainerStyle={{ padding: 16, paddingTop: 8, gap: 8, paddingBottom: lineas.length ? 100 : 24 }}
           renderItem={({ item }) =>
             grilla ? (
               <ProductoTarjeta producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
@@ -136,34 +261,15 @@ export default function Catalogo() {
           onEndReached={() => catalogo.hasNextPage && !catalogo.isFetchingNextPage && catalogo.fetchNextPage()}
           onEndReachedThreshold={0.5}
           ListFooterComponent={catalogo.isFetchingNextPage ? <Cargando /> : null}
-          ListEmptyComponent={
-            <T v="chico" style={{ textAlign: 'center', paddingTop: 30 }}>
-              {q ? `No encontramos "${q}".` : soloOfertas ? 'No hay ofertas vigentes.' : 'No hay productos en este rubro.'}
-            </T>
-          }
+          ListEmptyComponent={<SinResultados q={q} accent={accent} onLimpiar={limpiar} />}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         />
       )}
 
-      {lineas.length > 0 && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Ver carrito"
-          onPress={() => router.navigate('/pedido')}
-          style={{ position: 'absolute', left: 16, right: 16, bottom: 12, height: 52, borderRadius: radius.md, backgroundColor: accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, elevation: 4, shadowColor: colors.ink, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Icono name="cart-outline" color={colors.white} size={20} />
-            <T v="fuerte" style={{ color: colors.white }}>
-              {lineas.length} {lineas.length === 1 ? 'producto' : 'productos'}
-            </T>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <T v="fuerte" style={{ color: colors.white }}>{precio(estimado)}</T>
-            <Icono name="chevron-right" color={colors.white} size={20} />
-          </View>
-        </Pressable>
-      )}
+      {lineas.length > 0 && <CarritoFlotante cantidad={lineas.length} total={estimado} accent={accent} />}
+
+      <SelectorRubros visible={verRubros} rubros={rubros} activo={rubro} color={accent} onElegir={setRubro} onCerrar={() => setVerRubros(false)} />
     </View>
   );
 }

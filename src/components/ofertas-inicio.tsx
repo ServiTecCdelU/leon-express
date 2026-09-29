@@ -62,7 +62,7 @@ export function OfertasInicio({ slug, accent }: { slug: string; accent: string }
     const enCarrito = carrito[p.id]?.cantidad ?? 0;
     setCantidad(
       slug,
-      { productId: p.id, nombre: p.nombre, rubro: p.rubro, precioReferencia: p.precioOferta ?? p.precio, unidadesPorBulto: p.unidadesPorBulto, seDivideEn: p.seDivideEn },
+      { productId: p.id, nombre: p.nombre, rubro: p.rubro, precioReferencia: p.precioOferta ?? p.precio, unidadesPorBulto: p.unidadesPorBulto, seDivideEn: p.seDivideEn, imageUrl: p.imageUrl },
       enCarrito + 1,
     );
   };

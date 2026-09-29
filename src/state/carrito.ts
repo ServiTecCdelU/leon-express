@@ -13,6 +13,8 @@ export interface ItemCarrito {
   precioReferencia: number;
   unidadesPorBulto: number | null;
   seDivideEn: number | null;
+  /** Opcional: los ítems guardados antes de tener fotos (o repetidos de un pedido) no la traen. */
+  imageUrl?: string | null;
 }
 
 type PorComercio = Record<string, Record<string, ItemCarrito>>;

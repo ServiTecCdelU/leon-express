@@ -1,7 +1,8 @@
 // Primitivas visuales con la identidad del panel del SaaS (estilo shadcn: tarjetas blancas
 // con borde, botones teal, rounded-2xl, Geist).
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { ComponentProps, ReactNode } from 'react';
+import { Image } from 'expo-image';
+import { useState, type ComponentProps, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -133,11 +134,13 @@ export function Chip({
   texto,
   activo,
   color,
+  icono,
   onPress,
 }: {
   texto: string;
   activo?: boolean;
   color: string;
+  icono?: IconName;
   onPress?: () => void;
 }) {
   return (
@@ -145,17 +148,20 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected: !!activo }}
       onPress={onPress}
-      style={{
-        height: 34,
-        paddingHorizontal: 12,
+      style={({ pressed }) => ({
+        height: 36,
+        paddingHorizontal: icono ? 12 : 14,
         borderRadius: radius.pill,
-        justifyContent: 'center',
-        backgroundColor: activo ? tint(color) : colors.card,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: activo ? color : pressed ? colors.lineSoft : colors.card,
         borderWidth: 1,
         borderColor: activo ? color : colors.line,
-      }}
+      })}
     >
-      <T style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: activo ? color : colors.inkSoft }}>{texto}</T>
+      {icono ? <Icono name={icono} size={16} color={activo ? colors.white : color} /> : null}
+      <T style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: activo ? colors.white : colors.inkSoft }}>{texto}</T>
     </Pressable>
   );
 }
@@ -178,8 +184,27 @@ export function Insignia({ texto, bg, fg, borde }: { texto: string; bg: string; 
   );
 }
 
-/** Reemplazo de la foto del producto (el catálogo no tiene fotos): cuadrado teal-50 con iniciales. */
-export function FichaProducto({ iniciales, color = ACCENT_DEFAULT, size = 56 }: { iniciales: string; color?: string; size?: number }) {
+/** Foto del producto sobre blanco; sin foto (o si no carga), cuadrado teal-50 con iniciales. */
+export function FichaProducto({
+  iniciales,
+  imagenUrl,
+  color = ACCENT_DEFAULT,
+  size = 56,
+}: {
+  iniciales: string;
+  imagenUrl?: string | null;
+  color?: string;
+  size?: number;
+}) {
+  // Se guarda la URL que falló (no un booleano) por si la fila se recicla con otro producto.
+  const [fallida, setFallida] = useState<string | null>(null);
+  if (imagenUrl && imagenUrl !== fallida) {
+    return (
+      <View style={{ width: size, height: size, borderRadius: radius.md, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' }}>
+        <Image source={{ uri: imagenUrl }} style={{ flex: 1, margin: 2 }} contentFit="contain" onError={() => setFallida(imagenUrl)} />
+      </View>
+    );
+  }
   return (
     <View
       style={{

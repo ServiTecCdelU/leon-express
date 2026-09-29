@@ -3,8 +3,9 @@
 import { memo } from 'react';
 import { View } from 'react-native';
 import { BotonAgregar, DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
-import { FichaProducto, Insignia, T } from '@/components/ui';
-import { iniciales, precio, presentacion } from '@/lib/format';
+import { FotoProducto } from '@/components/foto-producto';
+import { Insignia, T } from '@/components/ui';
+import { precio, presentacion } from '@/lib/format';
 import type { ProductoApp } from '@/lib/tipos';
 import { colors, tarjetaBase } from '@/theme';
 
@@ -42,7 +43,7 @@ export const ProductoFila = memo(function ProductoFila(props: Props) {
   const { producto, cantidad, accent } = props;
   return (
     <View style={[tarjetaBase, { padding: 10, flexDirection: 'row', gap: 10, alignItems: 'center', borderColor: cantidad > 0 ? accent : colors.line }]}>
-      <FichaProducto iniciales={iniciales(producto.nombre)} color={accent} size={40} />
+      <FotoProducto nombre={producto.nombre} imagenUrl={producto.imageUrl} color={accent} size={40} />
       <View style={{ flex: 1, gap: 2 }}>
         <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{producto.nombre}</T>
         <T v="chico" style={{ fontSize: 12 }} numberOfLines={1}>{subtitulo(producto)}</T>
@@ -58,7 +59,7 @@ export const ProductoTarjeta = memo(function ProductoTarjeta(props: Props) {
   return (
     <View style={[tarjetaBase, { flex: 1, padding: 10, gap: 6, borderColor: cantidad > 0 ? accent : colors.line }]}>
       <View style={{ alignItems: 'center', paddingVertical: 4 }}>
-        <FichaProducto iniciales={iniciales(producto.nombre)} color={accent} size={56} />
+        <FotoProducto nombre={producto.nombre} imagenUrl={producto.imageUrl} color={accent} size={56} />
       </View>
       <T v="fuerte" numberOfLines={2} style={{ fontSize: 13, minHeight: 34 }}>{producto.nombre}</T>
       <T v="chico" style={{ fontSize: 11 }} numberOfLines={1}>{subtitulo(producto)}</T>

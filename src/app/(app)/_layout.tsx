@@ -37,14 +37,16 @@ export default function AppLayout() {
     });
   }, [conSesion, invitacion, canjear, setInvitacion, setSlugActivo]);
 
-  // Registrado, con la distribuidora del QR y sin ficha: alta automática (una vez por
-  // distribuidora; si falla queda como visitante y el banner permite reintentar).
+  // Registrado, con la distribuidora del QR y sin ficha en ELLA (aunque tenga otros
+  // comercios): alta automática (una vez por distribuidora; si falla queda como visitante
+  // y el banner permite reintentar).
+  const qrVinculado = !!distribuidora && comercios.some((c) => c.slug === distribuidora);
   useEffect(() => {
-    if (!conSesion || cargando || error || tieneComercio || invitacion || !distribuidora) return;
+    if (!conSesion || cargando || error || qrVinculado || invitacion || !distribuidora) return;
     if (altaIntentada.current === distribuidora) return;
     altaIntentada.current = distribuidora;
     alta.mutate(distribuidora, { onSuccess: (r) => setSlugActivo(r.slug) });
-  }, [conSesion, cargando, error, tieneComercio, invitacion, distribuidora, alta, setSlugActivo]);
+  }, [conSesion, cargando, error, qrVinculado, invitacion, distribuidora, alta, setSlugActivo]);
 
   if (cargando || canjear.isPending || alta.isPending) return <Cargando />;
 

@@ -27,7 +27,8 @@ export const useComercioStore = create<ComercioState>()(
       distribuidora: null,
       setSlugActivo: (slugActivo) => set({ slugActivo }),
       setInvitacion: (invitacion) => set({ invitacion }),
-      setDistribuidora: (distribuidora) => set({ distribuidora }),
+      // Escanear un QR también la deja como activa (si ya estaba vinculada, pasa a verse esa).
+      setDistribuidora: (distribuidora) => set(distribuidora ? { distribuidora, slugActivo: distribuidora } : { distribuidora }),
     }),
     { name: 'comercio', storage: createJSONStorage(() => almacen) },
   ),
