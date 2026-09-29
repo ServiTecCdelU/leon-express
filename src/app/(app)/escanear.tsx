@@ -1,14 +1,16 @@
 // Escáner de código de barras: el comercio apunta la cámara a la góndola y ve el producto,
 // su precio (con la lista del cliente), si está en oferta, y lo agrega al carrito con cantidad.
 import { useQueryClient } from '@tanstack/react-query';
-import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
+import { CameraView, type BarcodeScanningResult } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Vibration, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
+import { FotoProducto } from '@/components/foto-producto';
 import { Aviso, Boton, Cargando, FichaProducto, Icono, Insignia, T } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
+import { usePermisoCamara } from '@/hooks/use-permiso-camara';
 import { api, ApiError } from '@/lib/api';
 import { iniciales, precio, presentacion } from '@/lib/format';
 import type { ProductoApp } from '@/lib/tipos';
@@ -27,7 +29,7 @@ export default function Escanear() {
   const { slug, accent } = useComercioActivo();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const [permiso, pedirPermiso] = useCameraPermissions();
+  const { permiso, habilitar: habilitarCamara } = usePermisoCamara();
   const [estado, setEstado] = useState<Estado>({ tipo: 'escaneando' });
   const [elegido, setElegido] = useState<ProductoApp | null>(null);
   const [cantidad, setCantidad] = useState(1);
@@ -83,6 +85,7 @@ export default function Escanear() {
         precioReferencia: elegido.precioOferta ?? elegido.precio,
         unidadesPorBulto: elegido.unidadesPorBulto,
         seDivideEn: elegido.seDivideEn,
+        imageUrl: elegido.imageUrl,
       },
       cantidad,
     );
@@ -103,9 +106,12 @@ export default function Escanear() {
           Necesitamos la cámara para leer el código de barras de los productos y agregarlos a tu pedido.
         </T>
         {permiso.canAskAgain ? (
-          <Boton color={accent} icono="camera" onPress={pedirPermiso}>Permitir cámara</Boton>
+          <Boton color={accent} icono="camera" onPress={habilitarCamara}>Permitir cámara</Boton>
         ) : (
-          <Aviso tono="info" texto="Bloqueaste el permiso de cámara. Habilitalo en Ajustes del celular → Aplicaciones → Pedidos." />
+          <>
+            <Aviso tono="info" texto="El permiso de cámara está desactivado. Tocá el botón y activá Cámara en Permisos." />
+            <Boton color={accent} icono="cog-outline" onPress={habilitarCamara}>Habilitar permisos de cámara</Boton>
+          </>
         )}
         <Boton variante="borde" onPress={() => router.back()}>Volver</Boton>
       </View>
@@ -179,7 +185,7 @@ export default function Escanear() {
             <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 8 }}>
               {estado.productos.map((p) => (
                 <Pressable key={p.id} accessibilityRole="button" onPress={() => elegir(p)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line }}>
-                  <FichaProducto iniciales={iniciales(p.nombre)} color={accent} size={40} />
+                  <FichaProducto iniciales={iniciales(p.nombre)} imagenUrl={p.imageUrl} color={accent} size={40} />
                   <T style={{ flex: 1, fontSize: 14 }} numberOfLines={2}>{p.nombre}</T>
                   <T v="numero" style={{ fontSize: 15 }}>{precio(p.precioOferta ?? p.precio)}</T>
                 </Pressable>
@@ -192,7 +198,7 @@ export default function Escanear() {
         {estado.tipo === 'resultado' && elegido && (
           <>
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-              <FichaProducto iniciales={iniciales(elegido.nombre)} color={accent} size={56} />
+              <FotoProducto nombre={elegido.nombre} imagenUrl={elegido.imageUrl} color={accent} size={72} />
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="fuerte" numberOfLines={2}>{elegido.nombre}</T>
                 <T v="chico" style={{ fontSize: 12 }}>

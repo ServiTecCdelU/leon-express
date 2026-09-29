@@ -44,3 +44,7 @@ example
 .claude/settings.local.json
 
 # .env SÍ se sube al build (solo variables EXPO_PUBLIC_*, públicas)
+
+# builds descargados
+*.aab
+*.apk

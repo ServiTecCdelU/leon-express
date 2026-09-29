@@ -2,13 +2,14 @@
 // - QR de la distribuidora (sin token): la fija y entra (como visitante si no hay sesión).
 // - QR de invitación (?inv=): la guarda; el layout de (app) la canjea apenas hay sesión.
 // Sin cámara (o si no lee) se puede subir una imagen del QR.
-import { CameraView, scanFromURLAsync, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
+import { CameraView, scanFromURLAsync, type BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Vibration, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Aviso, Boton, Cargando, Icono, T } from '@/components/ui';
+import { usePermisoCamara } from '@/hooks/use-permiso-camara';
 import { parseQrDistribuidora } from '@/lib/qr-distribuidora';
 import { useComercioStore } from '@/state/comercio';
 import { ACCENT_DEFAULT, colors, radius } from '@/theme';
@@ -17,7 +18,7 @@ type Estado = { tipo: 'escaneando' } | { tipo: 'error'; mensaje: string };
 
 export default function EscanearQr() {
   const insets = useSafeAreaInsets();
-  const [permiso, pedirPermiso] = useCameraPermissions();
+  const { permiso, habilitar: habilitarCamara } = usePermisoCamara();
   const [estado, setEstado] = useState<Estado>({ tipo: 'escaneando' });
   const [sinCamara, setSinCamara] = useState(false);
   // La cámara dispara el mismo código muchas veces por segundo: se procesa uno a la vez.
@@ -101,9 +102,12 @@ export default function EscanearQr() {
         {estado.tipo === 'error' && <Aviso texto={estado.mensaje} />}
         {!sinCamara &&
           (permiso.canAskAgain ? (
-            <Boton color={ACCENT_DEFAULT} icono="camera" onPress={pedirPermiso}>Permitir cámara</Boton>
+            <Boton color={ACCENT_DEFAULT} icono="camera" onPress={habilitarCamara}>Permitir cámara</Boton>
           ) : (
-            <Aviso tono="info" texto="Bloqueaste el permiso de cámara. Habilitalo en Ajustes del celular → Aplicaciones → Pedidos." />
+            <>
+              <Aviso tono="info" texto="El permiso de cámara está desactivado. Tocá el botón y activá Cámara en Permisos." />
+              <Boton color={ACCENT_DEFAULT} icono="cog-outline" onPress={habilitarCamara}>Habilitar permisos de cámara</Boton>
+            </>
           ))}
         {botonImagen}
         <Boton variante="borde" onPress={salir}>Volver</Boton>
