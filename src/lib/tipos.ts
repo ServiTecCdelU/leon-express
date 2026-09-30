@@ -103,6 +103,8 @@ export interface Cuenta {
     /** Pesos por punto (regla de la distribuidora). */
     cadaPesos: number;
     movimientos: { fecha: string; puntos: number; descripcion: string | null }[];
+    /** Premios de merchandising, de menos a más puntos. */
+    premios: { id: string; nombre: string; descripcion: string | null; imagenUrl: string | null; puntos: number }[];
   } | null;
 }
 

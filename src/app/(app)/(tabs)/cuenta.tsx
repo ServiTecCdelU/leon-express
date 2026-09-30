@@ -1,5 +1,6 @@
 // Cuenta: datos del comercio, puntos de fidelidad, saldo y crédito, cerrar sesión (o registrarse, si es visitante). Movimientos e "informar pago"
 // llegan en la Fase 2 (la API todavía no los expone).
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
@@ -74,7 +75,37 @@ function TarjetaDatos({ cuenta, telefonoIngreso, accent, onEditar }: { cuenta: C
   );
 }
 
-/** Puntos de fidelidad (si la distribuidora tiene el módulo): saldo y últimos movimientos. */
+/** Premio de merchandising con cuántos puntos faltan (el canje se pide a la distribuidora). */
+function Premio({ premio, saldo, accent }: { premio: NonNullable<CuentaApp['puntos']>['premios'][number]; saldo: number; accent: string }) {
+  const alcanza = saldo >= premio.puntos;
+  const avance = Math.min(100, (saldo / premio.puntos) * 100);
+  return (
+    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', padding: 10, borderRadius: radius.md, borderWidth: 1, borderColor: alcanza ? accent : colors.line, backgroundColor: colors.card }}>
+      <View style={{ width: 52, height: 52, borderRadius: radius.md, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.lineSoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+        {premio.imagenUrl ? (
+          <Image source={{ uri: premio.imagenUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" accessibilityLabel={premio.nombre} />
+        ) : (
+          <Icono name="gift-outline" color={accent} size={26} />
+        )}
+      </View>
+      <View style={{ flex: 1, gap: 4 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+          <T v="fuerte" style={{ fontSize: 14, flex: 1 }} numberOfLines={1}>{premio.nombre}</T>
+          <T v="fuerte" style={{ fontSize: 13, color: accent }}>{premio.puntos.toLocaleString('es-AR')} pts</T>
+        </View>
+        {premio.descripcion ? <T v="chico" style={{ fontSize: 12 }} numberOfLines={1}>{premio.descripcion}</T> : null}
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.lineSoft }}>
+          <View style={{ width: `${avance}%`, height: 6, borderRadius: 3, backgroundColor: accent }} />
+        </View>
+        <T v="chico" style={{ fontSize: 12, color: alcanza ? colors.okInk : colors.muted }}>
+          {alcanza ? '¡Ya lo podés canjear! Pedíselo a tu vendedor.' : `Te faltan ${(premio.puntos - saldo).toLocaleString('es-AR')} puntos`}
+        </T>
+      </View>
+    </View>
+  );
+}
+
+/** Puntos de fidelidad (si la distribuidora tiene el módulo): saldo, premios y últimos movimientos. */
 function TarjetaPuntos({ puntos, accent }: { puntos: NonNullable<CuentaApp['puntos']>; accent: string }) {
   return (
     <Tarjeta style={{ gap: 10, borderColor: tint(accent, 0.3), backgroundColor: tint(accent, 0.04) }}>
@@ -88,8 +119,16 @@ function TarjetaPuntos({ puntos, accent }: { puntos: NonNullable<CuentaApp['punt
         </View>
       </View>
       <T v="chico" style={{ fontSize: 13 }}>
-        Sumás 1 punto cada {precio(puntos.cadaPesos)} de cada pedido entregado. Muy pronto vas a poder canjearlos por gorras, remeras y más.
+        Sumás 1 punto cada {precio(puntos.cadaPesos)} de cada pedido entregado.
+        {puntos.premios.length > 0 ? ' Canjealos por estos premios:' : ' Muy pronto vas a poder canjearlos por merchandising.'}
       </T>
+      {puntos.premios.length > 0 && (
+        <View style={{ gap: 8 }}>
+          {puntos.premios.map((p) => (
+            <Premio key={p.id} premio={p} saldo={puntos.saldo} accent={accent} />
+          ))}
+        </View>
+      )}
       {puntos.movimientos.length > 0 && (
         <View style={{ gap: 6, borderTopWidth: 1, borderTopColor: colors.lineSoft, paddingTop: 10 }}>
           {puntos.movimientos.slice(0, 5).map((m, i) => (
