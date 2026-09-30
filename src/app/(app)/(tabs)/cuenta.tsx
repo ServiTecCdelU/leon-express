@@ -1,7 +1,9 @@
 // Cuenta: saldo y crédito, datos del comercio, cerrar sesión (o registrarse, si es visitante). Movimientos e "informar pago"
 // llegan en la Fase 2 (la API todavía no los expone).
+import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
+import { HojaDatosComercio } from '@/components/datos-comercio';
 import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app';
 import { PieServiTec } from '@/components/pie-servitec';
 import { BannerRegistro } from '@/components/registro';
@@ -62,6 +64,7 @@ function CuentaCliente() {
   const usado = c?.credito.limite ? Math.min(100, (c.credito.saldo / c.credito.limite) * 100) : null;
   // En tablet apaisada y PC, saldo y datos del comercio lado a lado.
   const ancha = useEsAncha();
+  const [editando, setEditando] = useState(false);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -100,8 +103,12 @@ function CuentaCliente() {
               <T v="etiqueta">Datos del comercio</T>
               <T v="fuerte">{c.cliente.nombre}</T>
               {c.cliente.direccion ? <T v="chico">{[c.cliente.direccion, c.cliente.localidad].filter(Boolean).join(', ')}</T> : null}
+              {c.cliente.telefono ? <Fila etiqueta="Teléfono" valor={c.cliente.telefono} /> : null}
               {c.vendedor ? <Fila etiqueta="Vendedor" valor={c.vendedor} /> : null}
               {me.data?.telefono ? <Fila etiqueta="Ingresás con" valor={me.data.telefono} /> : null}
+              <Boton variante="suave" color={accent} icono="pencil-outline" chico onPress={() => setEditando(true)} style={{ marginTop: 4 }}>
+                {c.datosCompletos ? 'Editar datos del comercio' : 'Completar datos del comercio'}
+              </Boton>
             </Tarjeta>
           )}
           </View>
@@ -112,6 +119,17 @@ function CuentaCliente() {
 
           <PieServiTec />
         </ScrollView>
+      )}
+      {c && (
+        <HojaDatosComercio
+          visible={editando}
+          slug={slug!}
+          accent={accent}
+          inicial={{ negocio: c.cliente.nombre, direccion: c.cliente.direccion ?? '', localidad: c.cliente.localidad ?? '', telefono: c.cliente.telefono ?? '' }}
+          detalle="La distribuidora los usa para entregarte los pedidos."
+          onCerrar={() => setEditando(false)}
+          onGuardado={() => setEditando(false)}
+        />
       )}
     </View>
   );

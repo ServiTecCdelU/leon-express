@@ -5,6 +5,7 @@ import type {
   Comercio,
   Cotizacion,
   Cuenta,
+  DatosComercio,
   Me,
   PaginaCatalogo,
   PedidoCreado,
@@ -122,5 +123,14 @@ export function useAltaQr() {
   return useMutation({
     mutationFn: (slug: string) => api<{ slug: string; nombre: string }>(`/comercios/${encodeURIComponent(slug)}/alta`, { method: 'POST' }),
     onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+/** Guarda nombre del negocio, dirección, localidad y teléfono en la ficha del cliente. */
+export function useGuardarDatosComercio(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (datos: DatosComercio) => api<{ guardado: boolean }>(`/comercios/${slug}/datos`, { method: 'PUT', body: datos }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.cuenta(slug) }),
   });
 }

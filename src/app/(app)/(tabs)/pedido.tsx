@@ -8,13 +8,14 @@ import { ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraSuperior } from '@/components/barra-superior';
 import { DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
+import { HojaDatosComercio } from '@/components/datos-comercio';
 import { FotoProducto } from '@/components/foto-producto';
 import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app';
 import { Aviso, Boton, Fila, Insignia, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { ApiError } from '@/lib/api';
 import { precio, presentacion } from '@/lib/format';
-import { useCotizacion, useCrearPedido } from '@/lib/queries';
+import { useCotizacion, useCrearPedido, useCuenta } from '@/lib/queries';
 import { useCarrito, useCarritoStore, type ItemCarrito } from '@/state/carrito';
 import { useRegistroStore } from '@/state/registro';
 import { colors, fonts, radius } from '@/theme';
@@ -41,12 +42,14 @@ export default function Pedido() {
   const items = useMemo(() => lineas.map((l) => ({ productId: l.productId, quantity: l.cantidad })), [lineas]);
   const cot = useCotizacion(slug!, items, !visitante);
   const crear = useCrearPedido(slug!);
+  const cuenta = useCuenta(slug!, !visitante);
+  const [pidiendoDatos, setPidiendoDatos] = useState(false);
 
   const precioServidor = new Map((cot.data?.lineas ?? []).map((l) => [l.productId, l]));
   const errorProducto = cot.error instanceof ApiError ? (cot.error.extra?.productId as string | undefined) : undefined;
   const cambiar = (l: ItemCarrito, cantidad: number) => setCantidad(slug!, l, cantidad);
 
-  const confirmar = () => {
+  const enviarPedido = () => {
     const id = requestId ?? Crypto.randomUUID();
     if (!requestId) setRequestId(slug!, id);
     crear.mutate(
@@ -57,9 +60,44 @@ export default function Pedido() {
           setNotas('');
           router.push({ pathname: '/pedidos/[id]', params: { id: r.pedidoId, nuevo: '1' } });
         },
+        // El servidor también controla los datos (por si la cuenta estaba desactualizada).
+        onError: (e) => {
+          if (e instanceof ApiError && e.extra?.codigo === 'datos_incompletos') setPidiendoDatos(true);
+        },
       },
     );
   };
+
+  // Sin dirección, localidad o teléfono en la ficha, primero se piden los datos del comercio.
+  const confirmar = () => {
+    if (cuenta.data && !cuenta.data.datosCompletos) {
+      setPidiendoDatos(true);
+      return;
+    }
+    enviarPedido();
+  };
+
+  const fichaCliente = cuenta.data?.cliente;
+  const hojaDatos = (
+    <HojaDatosComercio
+      visible={pidiendoDatos}
+      slug={slug!}
+      accent={accent}
+      // En una ficha recién creada por la app el nombre es el de la cuenta de Google, no el del negocio.
+      inicial={{
+        negocio: fichaCliente?.direccion ? fichaCliente.nombre : '',
+        direccion: fichaCliente?.direccion ?? '',
+        localidad: fichaCliente?.localidad ?? '',
+        telefono: fichaCliente?.telefono ?? '',
+      }}
+      textoBoton="Guardar y enviar pedido"
+      onCerrar={() => setPidiendoDatos(false)}
+      onGuardado={() => {
+        setPidiendoDatos(false);
+        enviarPedido();
+      }}
+    />
+  );
 
   if (lineas.length === 0) {
     return (
@@ -196,6 +234,7 @@ export default function Pedido() {
             {accion}
           </ScrollView>
         </View>
+        {hojaDatos}
       </View>
     );
   }
@@ -212,6 +251,7 @@ export default function Pedido() {
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.line, padding: 16, paddingBottom: 16 + Math.min(insets.bottom, 8) }}>
         <View style={[columnaLectura, { gap: 8 }]}>{accion}</View>
       </View>
+      {hojaDatos}
     </View>
   );
 }

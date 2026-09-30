@@ -92,7 +92,17 @@ export interface PedidoResumen {
 }
 
 export interface Cuenta {
-  cliente: { nombre: string; direccion: string | null; localidad: string | null };
+  cliente: { nombre: string; direccion: string | null; localidad: string | null; telefono: string | null };
+  /** false → falta dirección, localidad o teléfono: se piden al confirmar el pedido. */
+  datosCompletos: boolean;
   vendedor: string | null;
   credito: Credito;
+}
+
+/** Datos del comercio que se piden al confirmar el pedido (van a la ficha del cliente). */
+export interface DatosComercio {
+  negocio: string;
+  direccion: string;
+  localidad: string;
+  telefono: string;
 }
