@@ -40,15 +40,16 @@ export function useComercioPublico(slug: string | undefined) {
   });
 }
 
-export function useCatalogo(slug: string, q: string, rubro: string, soloOfertas = false) {
+export function useCatalogo(slug: string, q: string, rubro: string, soloOfertas = false, masPedidos = false) {
   return useInfiniteQuery({
-    queryKey: [...qk.catalogo(slug, q, rubro), soloOfertas],
+    queryKey: [...qk.catalogo(slug, q, rubro), soloOfertas, masPedidos],
     initialPageParam: 1,
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ page: String(pageParam), pageSize: String(PAGE_SIZE) });
       if (q) params.set('q', q);
       if (rubro) params.set('rubro', rubro);
       if (soloOfertas) params.set('soloOfertas', '1');
+      if (masPedidos) params.set('masPedidos', '1');
       return api<PaginaCatalogo>(`/comercios/${slug}/catalogo?${params}`, { auth: 'opcional' });
     },
     getNextPageParam: (ultima) => (ultima.page < ultima.totalPages ? ultima.page + 1 : undefined),

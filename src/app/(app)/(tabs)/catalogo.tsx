@@ -1,14 +1,14 @@
-// Productos: catálogo paginado con búsqueda (nombre, código o código de barras), filtro
-// por rubro (chips con ícono + hoja con todos), vista lista o cuadrícula (se recuerda)
-// y cantidades tipeables. Desde el inicio llega con ?q=, ?rubro=, ?ofertas=1 o ?buscar=.
+// Productos: catálogo paginado con búsqueda (nombre, código o código de barras),
+// accesos Ofertas / Más pedidos / Rubros (hoja con todos), vista lista o cuadrícula (se recuerda)
+// y cantidades tipeables. Desde el inicio llega con ?q=, ?rubro=, ?ofertas=1, ?mas=1 o ?buscar=.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, Pressable, TextInput, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { anchoHoja, useAnchoApp } from '@/components/marco-app';
 import { ProductoFila, ProductoTarjeta } from '@/components/producto-fila';
 import { iconoDeRubro, SelectorRubros } from '@/components/rubros';
-import { Aviso, Boton, Cargando, Chip, Icono, T } from '@/components/ui';
+import { Aviso, Boton, Cargando, Icono, T, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { precio } from '@/lib/format';
 import { useCatalogo, useRubros } from '@/lib/queries';
@@ -92,40 +92,77 @@ function BarraBusqueda({
   );
 }
 
-function Filtros({
-  rubros,
-  rubro,
-  soloOfertas,
-  accent,
-  onRubro,
-  onOfertas,
-  onVerRubros,
-}: {
-  rubros: string[];
-  rubro: string;
-  soloOfertas: boolean;
-  accent: string;
-  onRubro: (r: string) => void;
-  onOfertas: () => void;
-  onVerRubros: () => void;
-}) {
-  // El rubro elegido va primero para que se vea aunque esté al final de la lista.
-  const orden = rubro ? [rubro, ...rubros.filter((r) => r !== rubro)] : rubros;
+/** Acceso rápido del catálogo: ocupa un tercio del ancho; activo = color de la marca. */
+function Atajo({ icono, texto, activo, accent, onPress, onQuitar }: { icono: IconName; texto: string; activo: boolean; accent: string; onPress: () => void; onQuitar?: () => void }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 2 }}>
-      <Chip texto="Rubros" icono="tune-variant" color={accent} onPress={onVerRubros} />
-      <Chip texto="Ofertas" icono="tag-outline" activo={soloOfertas} color={accent} onPress={onOfertas} />
-      {orden.map((r) => (
-        <Chip key={r} texto={nombreRubro(r)} icono={iconoDeRubro(r)} activo={rubro === r} color={accent} onPress={() => onRubro(rubro === r ? '' : r)} />
-      ))}
-    </ScrollView>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: activo }}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        height: 44,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: activo ? accent : colors.line,
+        backgroundColor: activo ? accent : pressed ? colors.lineSoft : colors.card,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingHorizontal: 8,
+      })}
+    >
+      <Icono name={icono} size={18} color={activo ? colors.white : accent} />
+      <T numberOfLines={1} style={{ flexShrink: 1, fontFamily: fonts.bodySemi, fontSize: 13, color: activo ? colors.white : colors.ink }}>{texto}</T>
+      {onQuitar ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={`Quitar ${texto}`} onPress={onQuitar} hitSlop={10}>
+          <Icono name="close-circle" size={16} color={colors.white} />
+        </Pressable>
+      ) : null}
+    </Pressable>
   );
 }
 
-function Resumen({ total, q, rubro, soloOfertas, onLimpiar }: { total?: number; q: string; rubro: string; soloOfertas: boolean; onLimpiar: () => void }) {
+function Atajos({
+  rubro,
+  soloOfertas,
+  masPedidos,
+  accent,
+  onOfertas,
+  onMasPedidos,
+  onVerRubros,
+  onQuitarRubro,
+}: {
+  rubro: string;
+  soloOfertas: boolean;
+  masPedidos: boolean;
+  accent: string;
+  onOfertas: () => void;
+  onMasPedidos: () => void;
+  onVerRubros: () => void;
+  onQuitarRubro: () => void;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16 }}>
+      <Atajo icono="tag-outline" texto="Ofertas" activo={soloOfertas} accent={accent} onPress={onOfertas} />
+      <Atajo icono="fire" texto="Más pedidos" activo={masPedidos} accent={accent} onPress={onMasPedidos} />
+      <Atajo
+        icono={rubro ? iconoDeRubro(rubro) : 'view-grid-outline'}
+        texto={rubro ? nombreRubro(rubro) : 'Rubros'}
+        activo={!!rubro}
+        accent={accent}
+        onPress={onVerRubros}
+        onQuitar={rubro ? onQuitarRubro : undefined}
+      />
+    </View>
+  );
+}
+
+function Resumen({ total, q, rubro, soloOfertas, masPedidos, onLimpiar }: { total?: number; q: string; rubro: string; soloOfertas: boolean; masPedidos: boolean; onLimpiar: () => void }) {
   if (total === undefined) return null;
-  const filtrado = !!(q || rubro || soloOfertas);
-  const partes = [q ? `para “${q}”` : '', rubro ? `en ${nombreRubro(rubro)}` : '', soloOfertas ? 'en oferta' : ''].filter(Boolean).join(' ');
+  const filtrado = !!(q || rubro || soloOfertas || masPedidos);
+  const partes = [masPedidos ? 'más pedidos' : '', q ? `para “${q}”` : '', rubro ? `en ${nombreRubro(rubro)}` : '', soloOfertas ? 'en oferta' : ''].filter(Boolean).join(' ');
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 10 }}>
       <T v="chico" style={{ flex: 1 }} numberOfLines={1}>
@@ -178,30 +215,32 @@ function CarritoFlotante({ cantidad, total, accent }: { cantidad: number; total:
 
 /** Filtros que llegan por parámetro (desde el inicio): se aplican cada vez que cambian. */
 function useFiltrosDeRuta() {
-  const params = useLocalSearchParams<{ rubro?: string; ofertas?: string; q?: string; buscar?: string }>();
-  const desdeRuta = { rubro: texto(params.rubro), ofertas: params.ofertas === '1', q: texto(params.q), buscar: texto(params.buscar) };
+  const params = useLocalSearchParams<{ rubro?: string; ofertas?: string; mas?: string; q?: string; buscar?: string }>();
+  const desdeRuta = { rubro: texto(params.rubro), ofertas: params.ofertas === '1', mas: params.mas === '1', q: texto(params.q), buscar: texto(params.buscar) };
   const [rubro, setRubro] = useState(desdeRuta.rubro);
   const [soloOfertas, setSoloOfertas] = useState(desdeRuta.ofertas);
+  const [masPedidos, setMasPedidos] = useState(desdeRuta.mas);
   const [busqueda, setBusqueda] = useState(desdeRuta.q);
   // Ajuste durante el render, no en un efecto: https://react.dev/learn/you-might-not-need-an-effect
-  const clave = `${desdeRuta.rubro}|${desdeRuta.ofertas}|${desdeRuta.q}|${desdeRuta.buscar}`;
+  const clave = `${desdeRuta.rubro}|${desdeRuta.ofertas}|${desdeRuta.mas}|${desdeRuta.q}|${desdeRuta.buscar}`;
   const [ultimaClave, setUltimaClave] = useState(clave);
   if (clave !== ultimaClave) {
     setUltimaClave(clave);
     setRubro(desdeRuta.rubro);
     setSoloOfertas(desdeRuta.ofertas);
+    setMasPedidos(desdeRuta.mas);
     setBusqueda(desdeRuta.q);
   }
-  return { rubro, setRubro, soloOfertas, setSoloOfertas, busqueda, setBusqueda, enfoque: desdeRuta.buscar };
+  return { rubro, setRubro, soloOfertas, setSoloOfertas, masPedidos, setMasPedidos, busqueda, setBusqueda, enfoque: desdeRuta.buscar };
 }
 
 export default function Catalogo() {
   const { comercio, slug, accent } = useComercioActivo();
-  const { rubro, setRubro, soloOfertas, setSoloOfertas, busqueda, setBusqueda, enfoque } = useFiltrosDeRuta();
+  const { rubro, setRubro, soloOfertas, setSoloOfertas, masPedidos, setMasPedidos, busqueda, setBusqueda, enfoque } = useFiltrosDeRuta();
   const [verRubros, setVerRubros] = useState(false);
   const q = useDebounce(busqueda.trim(), 350);
 
-  const catalogo = useCatalogo(slug!, q, rubro, soloOfertas);
+  const catalogo = useCatalogo(slug!, q, rubro, soloOfertas, masPedidos);
   const rubrosQuery = useRubros(slug!);
   const rubros = useMemo(() => rubrosVisibles(rubrosQuery.data ?? []), [rubrosQuery.data]);
   const carrito = useCarrito(slug);
@@ -225,6 +264,7 @@ export default function Catalogo() {
     setBusqueda('');
     setRubro('');
     setSoloOfertas(false);
+    setMasPedidos(false);
   };
 
   const cambiar = useCallback(
@@ -252,9 +292,18 @@ export default function Catalogo() {
             <Icono name={grilla ? 'view-list-outline' : 'view-grid-outline'} color={accent} size={22} />
           </Pressable>
         </View>
-        <Filtros rubros={rubros} rubro={rubro} soloOfertas={soloOfertas} accent={accent} onRubro={setRubro} onOfertas={() => setSoloOfertas(!soloOfertas)} onVerRubros={() => setVerRubros(true)} />
+        <Atajos
+          rubro={rubro}
+          soloOfertas={soloOfertas}
+          masPedidos={masPedidos}
+          accent={accent}
+          onOfertas={() => setSoloOfertas(!soloOfertas)}
+          onMasPedidos={() => setMasPedidos(!masPedidos)}
+          onVerRubros={() => setVerRubros(true)}
+          onQuitarRubro={() => setRubro('')}
+        />
       </View>
-      <Resumen total={total} q={q} rubro={rubro} soloOfertas={soloOfertas} onLimpiar={limpiar} />
+      <Resumen total={total} q={q} rubro={rubro} soloOfertas={soloOfertas} masPedidos={masPedidos} onLimpiar={limpiar} />
 
       {catalogo.isLoading ? (
         <Cargando />
