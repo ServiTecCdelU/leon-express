@@ -48,3 +48,6 @@ example
 # builds descargados
 *.aab
 *.apk
+
+# material de la ficha de Play Store
+play-store/

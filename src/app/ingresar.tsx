@@ -38,7 +38,7 @@ export default function Ingresar() {
           <View style={{ width: 52, height: 52, borderRadius: radius.lg, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
             <Icono name="storefront-outline" color={colors.white} size={26} />
           </View>
-          <T v="titulo" style={{ textAlign: 'center' }}>{marca.data?.nombre ?? 'Pedidos ServiTec'}</T>
+          <T v="titulo" style={{ textAlign: 'center' }}>{marca.data?.nombre ?? 'Leon Express'}</T>
           <T v="chico" style={{ textAlign: 'center', fontSize: 14 }}>
             {invitacion ? 'Tu vendedor te invitó a hacer los pedidos desde el celular.' : 'Hacé tus pedidos, mirá su estado y tu cuenta corriente.'}
           </T>

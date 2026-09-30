@@ -37,7 +37,7 @@ export default function EscanearQr() {
   const procesar = (data: string) => {
     const resultado = parseQrDistribuidora(data);
     if (!resultado) {
-      setEstado({ tipo: 'error', mensaje: 'Ese código no es un QR de ServiTec Pedidos.' });
+      setEstado({ tipo: 'error', mensaje: 'Ese código no es un QR de Leon Express.' });
       return;
     }
 
