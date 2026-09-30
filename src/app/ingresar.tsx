@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LogoMarca } from '@/components/logo-marca';
 import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Icono, T, Tarjeta } from '@/components/ui';
 import { ingresarConGoogle } from '@/lib/google';
@@ -36,9 +37,13 @@ export default function Ingresar() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={[columnaLectura, { maxWidth: 520, flexGrow: 1, justifyContent: 'center', padding: 20, gap: 20 }]}>
         <View style={{ alignItems: 'center', gap: 10 }}>
-          <View style={{ width: 52, height: 52, borderRadius: radius.lg, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
-            <Icono name="storefront-outline" color={colors.white} size={26} />
-          </View>
+          {marca.data ? (
+            <LogoMarca nombre={marca.data.nombre} logoUrl={marca.data.logoUrl} color={accent} size={72} />
+          ) : (
+            <View style={{ width: 52, height: 52, borderRadius: radius.lg, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
+              <Icono name="storefront-outline" color={colors.white} size={26} />
+            </View>
+          )}
           <T v="titulo" style={{ textAlign: 'center' }}>{marca.data?.nombre ?? 'Leon Express'}</T>
           <T v="chico" style={{ textAlign: 'center', fontSize: 14 }}>
             {invitacion ? 'Tu vendedor te invitó a hacer los pedidos desde el celular.' : 'Hacé tus pedidos, mirá su estado y tu cuenta corriente.'}

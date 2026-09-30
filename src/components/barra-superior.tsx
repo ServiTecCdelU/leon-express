@@ -1,9 +1,12 @@
-// Barra superior al estilo del header del panel: marca a la izquierda, comercio y acción.
+// Barra superior al estilo del header del panel: logo de la distribuidora a la izquierda,
+// título de la pantalla y acción.
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LogoMarca } from '@/components/logo-marca';
 import { T } from '@/components/ui';
-import { colors, fonts, radius } from '@/theme';
+import { useComercioActivo } from '@/hooks/use-comercio-activo';
+import { colors } from '@/theme';
 
 export function BarraSuperior({
   titulo,
@@ -19,6 +22,7 @@ export function BarraSuperior({
   derecha?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  const { comercio } = useComercioActivo();
   return (
     <View
       style={{
@@ -33,11 +37,7 @@ export function BarraSuperior({
         gap: 12,
       }}
     >
-      {izquierda ?? (
-        <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>
-          <T style={{ fontFamily: fonts.display, color: colors.white, fontSize: 16 }}>{titulo.charAt(0).toUpperCase()}</T>
-        </View>
-      )}
+      {izquierda ?? <LogoMarca nombre={comercio?.nombre || titulo} logoUrl={comercio?.logoUrl} color={color} />}
       <View style={{ flex: 1 }}>
         <T v="fuerte" numberOfLines={1}>{titulo}</T>
         {subtitulo ? <T v="chico" numberOfLines={1}>{subtitulo}</T> : null}
