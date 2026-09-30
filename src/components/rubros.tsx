@@ -14,18 +14,20 @@ interface CasillaProps {
   icono: IconName;
   color: string;
   activo?: boolean;
+  /** Ancho de la casilla: 25% en la grilla de 4 columnas. */
+  ancho?: `${number}%`;
   onPress: () => void;
 }
 
-/** Ícono en un cuadrado de tinte suave con el nombre abajo (grilla de 4 columnas). */
-function Casilla({ texto, icono: nombreIcono, color, activo, onPress }: CasillaProps) {
+/** Ícono en un cuadrado de tinte suave con el nombre abajo. */
+function Casilla({ texto, icono: nombreIcono, color, activo, ancho = '25%', onPress }: CasillaProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: !!activo }}
       accessibilityLabel={texto}
       onPress={onPress}
-      style={({ pressed }) => ({ width: '25%', alignItems: 'center', gap: 6, paddingVertical: 6, opacity: pressed ? 0.7 : 1 })}
+      style={({ pressed }) => ({ width: ancho, alignItems: 'center', gap: 6, paddingVertical: 6, opacity: pressed ? 0.7 : 1 })}
     >
       <View
         style={{
@@ -53,21 +55,24 @@ export function GrillaRubros({
   rubros,
   color,
   cantidad = 7,
+  columnas = 4,
   onElegir,
   onVerTodos,
 }: {
   rubros: string[];
   color: string;
   cantidad?: number;
+  columnas?: number;
   onElegir: (rubro: string) => void;
   onVerTodos: () => void;
 }) {
+  const ancho = `${100 / columnas}%` as const;
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -2 }}>
       {rubros.slice(0, cantidad).map((r) => (
-        <Casilla key={r} texto={nombreRubro(r)} icono={iconoDeRubro(r)} color={color} onPress={() => onElegir(r)} />
+        <Casilla key={r} texto={nombreRubro(r)} icono={iconoDeRubro(r)} color={color} ancho={ancho} onPress={() => onElegir(r)} />
       ))}
-      {rubros.length > cantidad && <Casilla texto="Ver todos" icono="view-grid-outline" color={color} onPress={onVerTodos} />}
+      {rubros.length > cantidad && <Casilla texto="Ver todos" icono="view-grid-outline" color={color} ancho={ancho} onPress={onVerTodos} />}
     </View>
   );
 }

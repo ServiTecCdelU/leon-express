@@ -1,4 +1,4 @@
-// Inicio: saludo con buscador, rubros con ícono, ofertas, último pedido (con "Repetir")
+// Inicio: saludo con buscador, ofertas, rubros con ícono, último pedido (con "Repetir")
 // y accesos compactos. Al visitante (entró por el QR, sin registrarse) le suma el
 // banner "Registrarme".
 import { router } from 'expo-router';
@@ -8,7 +8,7 @@ import { BarraSuperior } from '@/components/barra-superior';
 import { EstadoPedidoInsignia } from '@/components/estado-pedido';
 import { OfertasInicio } from '@/components/ofertas-inicio';
 import { BannerRegistro } from '@/components/registro';
-import { columnaLectura } from '@/components/marco-app';
+import { columnaAncha, useEsAncha } from '@/components/marco-app';
 import { GrillaRubros, SelectorRubros } from '@/components/rubros';
 import { Boton, Chip, Icono, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
@@ -83,18 +83,34 @@ function UltimoPedido({ pedido, accent, onRepetir }: { pedido: PedidoResumen; ac
   );
 }
 
-function Acceso({ icono, titulo, accent, onPress }: { icono: IconName; titulo: string; accent: string; onPress: () => void }) {
+/** Acceso rápido: tarjeta con ícono arriba (en fila, celular) o ícono al costado (enLinea, columna lateral). */
+function Acceso({ icono, titulo, accent, enLinea, onPress }: { icono: IconName; titulo: string; accent: string; enLinea?: boolean; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [tarjetaBase, { flex: 1, padding: 14, gap: 10, backgroundColor: pressed ? colors.lineSoft : colors.card }]}
+      style={({ pressed }) => [tarjetaBase, { flex: enLinea ? undefined : 1, padding: 14, gap: enLinea ? 12 : 10, flexDirection: enLinea ? 'row' : 'column', alignItems: enLinea ? 'center' : undefined, backgroundColor: pressed ? colors.lineSoft : colors.card }]}
     >
       <View style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: tint(accent), alignItems: 'center', justifyContent: 'center' }}>
         <Icono name={icono} color={accent} />
       </View>
       <T v="fuerte" style={{ fontSize: 14 }}>{titulo}</T>
     </Pressable>
+  );
+}
+
+/** Último pedido y accesos: abajo en el celular (accesos en fila), a la derecha en pantallas anchas. */
+function Laterales({ ultimo, accent, onRepetir, fila }: { ultimo?: PedidoResumen; accent: string; onRepetir: () => void; fila?: boolean }) {
+  return (
+    <>
+      {ultimo && <UltimoPedido pedido={ultimo} accent={accent} onRepetir={onRepetir} />}
+      {!fila && <Seccion titulo="Accesos rápidos" />}
+      <View style={{ flexDirection: fila ? 'row' : 'column', gap: 10 }}>
+        <Acceso icono="barcode-scan" titulo="Escanear productos" accent={accent} enLinea={!fila} onPress={() => router.push('/escanear')} />
+        <Acceso icono="clipboard-list-outline" titulo="Mis pedidos" accent={accent} enLinea={!fila} onPress={() => router.navigate('/pedidos')} />
+        {!fila && <Acceso icono="cart-outline" titulo="Ver carrito" accent={accent} enLinea onPress={() => router.navigate('/pedido')} />}
+      </View>
+    </>
   );
 }
 
@@ -106,6 +122,7 @@ export default function Inicio() {
   const rubrosQuery = useRubros(slug!);
   const rubros = useMemo(() => rubrosVisibles(rubrosQuery.data ?? []), [rubrosQuery.data]);
   const [verRubros, setVerRubros] = useState(false);
+  const ancha = useEsAncha();
   const setCantidad = useCarritoStore((s) => s.setCantidad);
 
   const ultimo = pedidos.data?.[0];
@@ -138,7 +155,7 @@ export default function Inicio() {
         }
       >
         <View style={{ backgroundColor: tint(accent, 0.07), paddingTop: 18, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: tint(accent, 0.18) }}>
-          <View style={[columnaLectura, { paddingHorizontal: 16, gap: 14 }]}>
+          <View style={[columnaAncha, { paddingHorizontal: 16, gap: 14 }]}>
             <View style={{ gap: 2 }}>
               <T v="chico" style={{ color: colors.tealInk, fontFamily: fonts.bodyMedium }}>{nombre ? `${saludo()}, ${nombre}` : saludo()}</T>
               <T v="titulo" style={{ fontSize: 24, lineHeight: 30 }}>¿Qué vas a pedir hoy?</T>
@@ -147,32 +164,44 @@ export default function Inicio() {
           </View>
         </View>
 
-        <View style={[columnaLectura, { padding: 16, gap: 12 }]}>
-          {comercios.length > 1 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {comercios.map((c) => (
-                <Chip key={c.slug} texto={c.nombre} icono="store-outline" activo={c.slug === slug} color={accent} onPress={() => setSlugActivo(c.slug)} />
-              ))}
-            </ScrollView>
-          )}
+        {/* Celular: todo en una columna. Tablet apaisada y PC: rubros y ofertas a la izquierda,
+            último pedido y accesos en una columna a la derecha. */}
+        <View style={[columnaAncha, { padding: 16, gap: ancha ? 20 : 12, flexDirection: ancha ? 'row' : 'column', alignItems: 'flex-start' }]}>
+          <View style={{ gap: 12, width: ancha ? undefined : '100%', flex: ancha ? 1 : undefined }}>
+            {comercios.length > 1 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {comercios.map((c) => (
+                  <Chip key={c.slug} texto={c.nombre} icono="store-outline" activo={c.slug === slug} color={accent} onPress={() => setSlugActivo(c.slug)} />
+                ))}
+              </ScrollView>
+            )}
 
-          {visitante && <BannerRegistro conSesion={conSesion} accent={accent} />}
+            {visitante && <BannerRegistro conSesion={conSesion} accent={accent} />}
 
-          {rubros.length > 0 && (
-            <>
-              <Seccion titulo="Rubros" accion="Ver todos" onAccion={() => setVerRubros(true)} />
-              <GrillaRubros rubros={rubros} color={accent} onElegir={(r) => irACatalogo({ rubro: r })} onVerTodos={() => setVerRubros(true)} />
-            </>
-          )}
+            <OfertasInicio slug={slug!} accent={accent} enGrilla={ancha} />
 
-          <OfertasInicio slug={slug!} accent={accent} />
+            {rubros.length > 0 && (
+              <>
+                <Seccion titulo="Rubros" accion="Ver todos" onAccion={() => setVerRubros(true)} />
+                <GrillaRubros
+                  rubros={rubros}
+                  color={accent}
+                  cantidad={ancha ? 11 : 7}
+                  columnas={ancha ? 6 : 4}
+                  onElegir={(r) => irACatalogo({ rubro: r })}
+                  onVerTodos={() => setVerRubros(true)}
+                />
+              </>
+            )}
 
-          {ultimo && <UltimoPedido pedido={ultimo} accent={accent} onRepetir={repetirUltimo} />}
-
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Acceso icono="barcode-scan" titulo="Escanear productos" accent={accent} onPress={() => router.push('/escanear')} />
-            <Acceso icono="clipboard-list-outline" titulo="Mis pedidos" accent={accent} onPress={() => router.navigate('/pedidos')} />
+            {!ancha && <Laterales ultimo={ultimo} accent={accent} onRepetir={repetirUltimo} fila />}
           </View>
+
+          {ancha && (
+            <View style={{ width: 340, gap: 12, marginTop: 8 }}>
+              <Laterales ultimo={ultimo} accent={accent} onRepetir={repetirUltimo} />
+            </View>
+          )}
         </View>
       </ScrollView>
 

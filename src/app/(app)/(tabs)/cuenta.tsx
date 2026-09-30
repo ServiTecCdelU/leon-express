@@ -2,7 +2,7 @@
 // llegan en la Fase 2 (la API todavía no los expone).
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
-import { columnaLectura } from '@/components/marco-app';
+import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app';
 import { PieServiTec } from '@/components/pie-servitec';
 import { BannerRegistro } from '@/components/registro';
 import { Aviso, Boton, Cargando, Fila, Insignia, T, Tarjeta } from '@/components/ui';
@@ -60,6 +60,8 @@ function CuentaCliente() {
   const c = cuenta.data;
   const clasif = CLASIFICACION[c?.credito.clasificacion ?? 'normal'] ?? CLASIFICACION.atrasado;
   const usado = c?.credito.limite ? Math.min(100, (c.credito.saldo / c.credito.limite) * 100) : null;
+  // En tablet apaisada y PC, saldo y datos del comercio lado a lado.
+  const ancha = useEsAncha();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -68,13 +70,14 @@ function CuentaCliente() {
         <Cargando />
       ) : (
         <ScrollView
-          contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 32 }]}
+          contentContainerStyle={[ancha ? columnaAncha : columnaLectura, { padding: 16, gap: 12, paddingBottom: 32 }]}
           refreshControl={<RefreshControl refreshing={cuenta.isRefetching} onRefresh={() => cuenta.refetch()} />}
         >
           {cuenta.error && <Aviso texto={cuenta.error.message} />}
 
+          <View style={{ flexDirection: ancha ? 'row' : 'column', gap: 12, alignItems: ancha ? 'flex-start' : 'stretch' }}>
           {c && (
-            <Tarjeta style={{ gap: 12 }}>
+            <Tarjeta style={{ gap: 12, flex: ancha ? 1 : undefined }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <T v="etiqueta">Saldo a pagar</T>
                 <Insignia {...clasif} />
@@ -93,7 +96,7 @@ function CuentaCliente() {
           )}
 
           {c && (
-            <Tarjeta style={{ gap: 8 }}>
+            <Tarjeta style={{ gap: 8, flex: ancha ? 1 : undefined }}>
               <T v="etiqueta">Datos del comercio</T>
               <T v="fuerte">{c.cliente.nombre}</T>
               {c.cliente.direccion ? <T v="chico">{[c.cliente.direccion, c.cliente.localidad].filter(Boolean).join(', ')}</T> : null}
@@ -101,8 +104,9 @@ function CuentaCliente() {
               {me.data?.telefono ? <Fila etiqueta="Ingresás con" valor={me.data.telefono} /> : null}
             </Tarjeta>
           )}
+          </View>
 
-          <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()}>
+          <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()} style={ancha ? { alignSelf: 'flex-start' } : undefined}>
             Cerrar sesión
           </Boton>
 

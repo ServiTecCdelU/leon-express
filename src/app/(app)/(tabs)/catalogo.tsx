@@ -208,7 +208,10 @@ export default function Catalogo() {
   const setCantidad = useCarritoStore((s) => s.setCantidad);
   const { vista, setVista } = usePreferencias();
   const grilla = vista === 'cuadricula';
-  const ancho = useAnchoApp();
+  // Ancho real de la pantalla (sin el menú lateral en tablet/PC); antes de medir, el de la ventana.
+  const anchoVentana = useAnchoApp();
+  const [anchoMedido, setAnchoMedido] = useState(0);
+  const ancho = anchoMedido || anchoVentana;
   const columnas = columnasPara(ancho, grilla);
   // Ancho fijo por columna: así la última fila incompleta no se estira.
   const anchoItem = columnas > 1 ? (ancho - PAD * 2 - GAP * (columnas - 1)) / columnas : undefined;
@@ -235,7 +238,7 @@ export default function Catalogo() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }} onLayout={(e) => setAnchoMedido(Math.round(e.nativeEvent.layout.width))}>
       <BarraSuperior titulo="Productos" subtitulo={comercio?.nombre} color={accent} />
       <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.line, paddingTop: 12, paddingBottom: 12, gap: 10 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 }}>

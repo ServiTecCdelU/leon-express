@@ -42,7 +42,7 @@ const subtitulo = (p: ProductoApp) => `${presentacion(p.unidadesPorBulto, p.seDi
 export const ProductoFila = memo(function ProductoFila(props: Props) {
   const { producto, cantidad, accent } = props;
   return (
-    <View style={[tarjetaBase, { padding: 10, flexDirection: 'row', gap: 10, alignItems: 'center', borderColor: cantidad > 0 ? accent : colors.line }]}>
+    <View style={[tarjetaBase, { flexGrow: 1, padding: 10, flexDirection: 'row', gap: 10, alignItems: 'center', borderColor: cantidad > 0 ? accent : colors.line }]}>
       <FotoProducto nombre={producto.nombre} imagenUrl={producto.imageUrl} color={accent} size={40} />
       <View style={{ flex: 1, gap: 2 }}>
         <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{producto.nombre}</T>

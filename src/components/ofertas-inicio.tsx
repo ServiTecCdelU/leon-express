@@ -1,11 +1,11 @@
 // Carrusel de ofertas vigentes (cargadas en el panel → "App de pedidos").
-// Una oferta por vez, se desliza con el dedo y avanza sola; la imagen se muestra entera
-// (sirve la foto vertical del producto o un banner apaisado) sobre fondo blanco.
+// En celular, una oferta por vez: se desliza con el dedo y avanza sola. En pantallas anchas
+// (enGrilla) se muestran todas en dos columnas. La imagen se muestra entera (sirve la foto
+// vertical del producto o un banner apaisado) sobre fondo blanco.
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { useAnchoLectura } from '@/components/marco-app';
+import { FlatList, Pressable, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Boton, Icono, Insignia, T } from '@/components/ui';
 import { precio } from '@/lib/format';
 import { useOfertas } from '@/lib/queries';
@@ -14,17 +14,18 @@ import { useCarrito, useCarritoStore } from '@/state/carrito';
 import { colors, radius, tarjetaBase, tint } from '@/theme';
 
 const GAP = 12;
-const PADDING = 16; // padding horizontal de la pantalla de inicio
 const ALTO = 188;
 const AUTOPLAY_MS = 4500;
 
-export function OfertasInicio({ slug, accent }: { slug: string; accent: string }) {
+export function OfertasInicio({ slug, accent, enGrilla = false }: { slug: string; accent: string; enGrilla?: boolean }) {
   const ofertas = useOfertas(slug);
   const carrito = useCarrito(slug);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
-  const width = useAnchoLectura();
-  const ancho = width - PADDING * 2;
+  // Ancho real del contenedor: la tarjeta ocupa todo (carrusel) o la mitad (grilla).
+  const [anchoCont, setAnchoCont] = useState(0);
+  const ancho = enGrilla ? (anchoCont - GAP) / 2 : anchoCont;
   const paso = ancho + GAP;
+  const medir = (e: LayoutChangeEvent) => setAnchoCont(Math.round(e.nativeEvent.layout.width));
 
   const lista = useRef<FlatList<OfertaApp>>(null);
   const [actual, setActual] = useState(0);
@@ -34,7 +35,7 @@ export function OfertasInicio({ slug, accent }: { slug: string; accent: string }
 
   // Avance automático; se pausa mientras el usuario desliza.
   useEffect(() => {
-    if (total < 2) return;
+    if (total < 2 || enGrilla || !paso) return;
     const id = setInterval(() => {
       if (tocando.current) return;
       setActual((i) => {
@@ -44,7 +45,7 @@ export function OfertasInicio({ slug, accent }: { slug: string; accent: string }
       });
     }, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [total, paso]);
+  }, [total, paso, enGrilla]);
 
   const alSoltar = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -76,26 +77,35 @@ export function OfertasInicio({ slug, accent }: { slug: string; accent: string }
         </Pressable>
       </View>
 
-      <FlatList
-        ref={lista}
-        horizontal
-        data={items}
-        keyExtractor={(o) => o.id}
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={paso}
-        decelerationRate="fast"
-        disableIntervalMomentum
-        style={{ marginHorizontal: -PADDING }}
-        contentContainerStyle={{ paddingHorizontal: PADDING, gap: GAP }}
-        getItemLayout={(_, index) => ({ length: paso, offset: paso * index, index })}
-        onScrollBeginDrag={() => (tocando.current = true)}
-        onMomentumScrollEnd={alSoltar}
-        renderItem={({ item: o }) => (
-          <TarjetaOferta oferta={o} ancho={ancho} accent={accent} enCarrito={o.producto ? carrito[o.producto.id]?.cantidad ?? 0 : 0} onAgregar={() => agregar(o)} />
+      <View onLayout={medir}>
+        {anchoCont === 0 ? null : enGrilla ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
+            {items.map((o) => (
+              <TarjetaOferta key={o.id} oferta={o} ancho={ancho} accent={accent} enCarrito={o.producto ? carrito[o.producto.id]?.cantidad ?? 0 : 0} onAgregar={() => agregar(o)} />
+            ))}
+          </View>
+        ) : (
+          <FlatList
+            ref={lista}
+            horizontal
+            data={items}
+            keyExtractor={(o) => o.id}
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={paso}
+            decelerationRate="fast"
+            disableIntervalMomentum
+            contentContainerStyle={{ gap: GAP }}
+            getItemLayout={(_, index) => ({ length: paso, offset: paso * index, index })}
+            onScrollBeginDrag={() => (tocando.current = true)}
+            onMomentumScrollEnd={alSoltar}
+            renderItem={({ item: o }) => (
+              <TarjetaOferta oferta={o} ancho={ancho} accent={accent} enCarrito={o.producto ? carrito[o.producto.id]?.cantidad ?? 0 : 0} onAgregar={() => agregar(o)} />
+            )}
+          />
         )}
-      />
+      </View>
 
-      {total > 1 && (
+      {total > 1 && !enGrilla && (
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }} accessibilityLabel={`Oferta ${actual + 1} de ${total}`}>
           {items.map((o, i) => (
             <View key={o.id} style={{ width: i === actual ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: i === actual ? accent : colors.line }} />

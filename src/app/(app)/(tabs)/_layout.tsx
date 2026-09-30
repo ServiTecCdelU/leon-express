@@ -1,12 +1,13 @@
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import type { ColorValue } from 'react-native';
+import { useEsAncha } from '@/components/marco-app';
 import { RecordatorioRegistro } from '@/components/registro';
 import { Icono, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { useCarrito } from '@/state/carrito';
 import { useRegistroStore } from '@/state/registro';
-import { colors, fonts } from '@/theme';
+import { colors, fonts, tint } from '@/theme';
 
 const icono = (name: IconName) =>
   function TabIcon({ color }: { color: ColorValue }) {
@@ -18,6 +19,8 @@ export default function TabsLayout() {
   const carrito = useCarrito(slug);
   const lineas = Object.keys(carrito).length;
   const recordarSiToca = useRegistroStore((s) => s.recordarSiToca);
+  // Tablet apaisada y PC: el menú pasa a una barra lateral con ícono y nombre.
+  const ancha = useEsAncha();
 
   useEffect(() => {
     if (visitante) recordarSiToca();
@@ -30,8 +33,13 @@ export default function TabsLayout() {
           headerShown: false,
           tabBarActiveTintColor: accent,
           tabBarInactiveTintColor: colors.muted,
-          tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11 },
-          tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.line, height: 80, paddingTop: 6 },
+          tabBarPosition: ancha ? 'left' : 'bottom',
+          tabBarLabelPosition: ancha ? 'beside-icon' : 'below-icon',
+          tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: ancha ? 14 : 11 },
+          tabBarStyle: ancha
+            ? { backgroundColor: colors.card, borderRightColor: colors.line, paddingTop: 12, width: 220, minWidth: 220 }
+            : { backgroundColor: colors.card, borderTopColor: colors.line, height: 80, paddingTop: 6 },
+          tabBarActiveBackgroundColor: ancha ? tint(accent, 0.1) : undefined,
           tabBarBadgeStyle: { backgroundColor: accent, fontFamily: fonts.bodySemi, fontSize: 11 },
           sceneStyle: { backgroundColor: colors.bg },
         }}

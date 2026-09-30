@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { EstadoPedidoInsignia } from '@/components/estado-pedido';
-import { columnaLectura } from '@/components/marco-app';
+import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app';
 import { BannerRegistro } from '@/components/registro';
 import { Aviso, Cargando, Icono, T } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
@@ -14,6 +14,8 @@ import { colors, tarjetaBase } from '@/theme';
 export default function MisPedidos() {
   const { slug, accent, visitante, conSesion } = useComercioActivo();
   const pedidos = usePedidos(slug!, !visitante);
+  // En tablet apaisada y PC, dos columnas de pedidos.
+  const columnas = useEsAncha() ? 2 : 1;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -29,16 +31,19 @@ export default function MisPedidos() {
         <View style={[columnaLectura, { padding: 16 }]}><Aviso texto={pedidos.error.message} /></View>
       ) : (
         <FlatList
+          key={columnas}
           data={pedidos.data}
           keyExtractor={(p) => p.id}
-          contentContainerStyle={[columnaLectura, { padding: 16, gap: 8 }]}
+          numColumns={columnas}
+          columnWrapperStyle={columnas > 1 ? { gap: 8 } : undefined}
+          contentContainerStyle={[columnas > 1 ? columnaAncha : columnaLectura, { padding: 16, gap: 8 }]}
           refreshControl={<RefreshControl refreshing={pedidos.isRefetching} onRefresh={() => pedidos.refetch()} />}
           ListEmptyComponent={<T v="chico" style={{ textAlign: 'center', paddingTop: 30 }}>Todavía no hiciste pedidos.</T>}
           renderItem={({ item }) => (
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push({ pathname: '/pedidos/[id]', params: { id: item.id } })}
-              style={({ pressed }) => [tarjetaBase, { padding: 14, gap: 8, opacity: pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [tarjetaBase, { flex: 1, maxWidth: columnas > 1 ? '50%' : undefined, padding: 14, gap: 8, opacity: pressed ? 0.85 : 1 }]}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <T v="fuerte" style={{ fontSize: 14 }}>

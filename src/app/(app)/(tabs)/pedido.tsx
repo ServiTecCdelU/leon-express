@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraSuperior } from '@/components/barra-superior';
 import { DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
 import { FotoProducto } from '@/components/foto-producto';
-import { columnaLectura } from '@/components/marco-app';
+import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app';
 import { Aviso, Boton, Fila, Insignia, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { ApiError } from '@/lib/api';
@@ -29,6 +29,7 @@ export default function Pedido() {
   const { slug, accent, visitante } = useComercioActivo();
   const pedirRegistro = useRegistroStore((s) => s.abrir);
   const insets = useSafeAreaInsets();
+  const ancha = useEsAncha();
   const carrito = useCarrito(slug);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
   const vaciar = useCarritoStore((s) => s.vaciar);
@@ -79,97 +80,137 @@ export default function Pedido() {
   const total = visitante ? lineas.reduce((acc, l) => acc + l.precioReferencia * l.cantidad, 0) : cot.data?.total;
   const clasif = CLASIFICACION[credito?.clasificacion ?? 'normal'] ?? CLASIFICACION.atrasado;
 
+  const listaItems = (
+    <Tarjeta style={{ padding: 0 }}>
+      {lineas.map((l, i) => {
+        const srv = precioServidor.get(l.productId);
+        const conError = errorProducto === l.productId;
+        return (
+          // En pantallas anchas, cada producto en una sola línea: foto y nombre, subtotal y cantidad.
+          <View key={l.productId} style={{ padding: 12, gap: ancha ? 24 : 10, flexDirection: ancha ? 'row' : 'column', alignItems: ancha ? 'center' : 'stretch', borderTopWidth: i ? 1 : 0, borderTopColor: colors.lineSoft, backgroundColor: conError ? colors.errorSoft : undefined }}>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', flex: ancha ? 1 : undefined }}>
+              <FotoProducto nombre={l.nombre} imagenUrl={l.imageUrl} color={accent} size={40} />
+              <View style={{ flex: 1 }}>
+                <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{l.nombre}</T>
+                <T v="chico" style={{ fontSize: 12 }}>
+                  {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {srv ? precio(srv.price) : visitante ? precio(l.precioReferencia) : '…'} c/u
+                </T>
+                {srv?.itemDiscount ? (
+                  <View style={{ marginTop: 4 }}>
+                    <Insignia texto={`Oferta −${srv.itemDiscount}%`} bg={colors.tealSoft} fg={colors.tealInk} borde={colors.tealLine} />
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
+              {conError ? (
+                <Insignia texto="Ya no está disponible" bg={colors.errorSoft} fg={colors.errorInk} borde={colors.errorLine} />
+              ) : (
+                <T v="numero" style={{ fontSize: 15 }}>{srv ? precio(srv.subtotal) : visitante ? precio(l.precioReferencia * l.cantidad) : '…'}</T>
+              )}
+              <View style={{ alignItems: 'center', gap: 2 }}>
+                <SelectorCantidad cantidad={l.cantidad} color={accent} nombre={l.nombre} onCambiar={(n) => cambiar(l, n)} />
+                <DetalleCantidad cantidad={l.cantidad} unidadesPorBulto={l.unidadesPorBulto} seDivideEn={l.seDivideEn} />
+              </View>
+            </View>
+          </View>
+        );
+      })}
+    </Tarjeta>
+  );
+
+  const avisos = (
+    <>
+      {visitante && <Aviso tono="info" texto="Precios de referencia. Al registrarte se confirman con tu lista de precios." />}
+      {cot.error && <Aviso texto={cot.error.message} />}
+      {cot.data?.retencion && <Aviso tono="info" texto={cot.data.retencion} />}
+    </>
+  );
+
+  const resumen = (
+    <>
+      {credito && (
+        <Tarjeta style={{ gap: 10 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <T v="fuerte" style={{ fontSize: 14 }}>Cuenta corriente</T>
+            <Insignia {...clasif} />
+          </View>
+          <Fila etiqueta="Saldo actual" valor={precio(credito.saldo)} />
+          {credito.limite ? <Fila etiqueta="Límite" valor={precio(credito.limite)} /> : null}
+          {credito.disponible != null ? <Fila etiqueta="Disponible" valor={precio(credito.disponible)} /> : null}
+        </Tarjeta>
+      )}
+
+      <Tarjeta style={{ gap: 8 }}>
+        <T v="fuerte" style={{ fontSize: 14 }}>Nota para la distribuidora</T>
+        <TextInput
+          accessibilityLabel="Nota para la distribuidora"
+          value={notas}
+          onChangeText={setNotas}
+          placeholder="Ej.: si no hay aceite de 1,5 L, mandar el de 900 ml"
+          placeholderTextColor={colors.muted}
+          multiline
+          maxLength={500}
+          style={{ minHeight: 64, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 10, fontSize: 14, fontFamily: fonts.body, color: colors.ink, textAlignVertical: 'top' }}
+        />
+      </Tarjeta>
+
+      <Tarjeta style={{ gap: 8 }}>
+        {cot.data?.lista && <Fila etiqueta="Lista de precios" valor={cot.data.lista.nombre} />}
+        <Fila etiqueta="Forma de pago" valor="Cuenta corriente" />
+        <View style={{ height: 1, backgroundColor: colors.lineSoft, marginVertical: 4 }} />
+        <Fila etiqueta="Total" valor={total !== undefined ? precio(total) : '…'} fuerte />
+      </Tarjeta>
+    </>
+  );
+
+  const accion = (
+    <>
+      {crear.error && <Aviso texto={crear.error.message} />}
+      {visitante ? (
+        <Boton color={accent} icono="account-plus-outline" onPress={() => pedirRegistro('Registrate para enviar tu pedido. Tu carrito queda guardado.')}>
+          Registrarme y enviar{total !== undefined ? ` · ${precio(total)}` : ''}
+        </Boton>
+      ) : (
+        <Boton color={accent} icono="check" onPress={confirmar} cargando={crear.isPending} disabled={!cot.data || cot.isFetching || !!cot.error}>
+          Confirmar pedido{total !== undefined ? ` · ${precio(total)}` : ''}
+        </Boton>
+      )}
+    </>
+  );
+
+  const subtitulo = `${lineas.length} ${lineas.length === 1 ? 'producto' : 'productos'}`;
+
+  // Tablet apaisada y PC: productos a la izquierda, resumen y confirmar fijos a la derecha.
+  if (ancha) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <BarraSuperior titulo="Carrito" subtitulo={subtitulo} color={accent} />
+        <View style={[columnaAncha, { flex: 1, flexDirection: 'row', gap: 16, padding: 16 }]}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 12, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+            {listaItems}
+            {avisos}
+          </ScrollView>
+          <ScrollView style={{ width: 380, flexGrow: 0 }} contentContainerStyle={{ gap: 12, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+            {resumen}
+            {accion}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <BarraSuperior titulo="Carrito" subtitulo={`${lineas.length} ${lineas.length === 1 ? 'producto' : 'productos'}`} color={accent} />
+      <BarraSuperior titulo="Carrito" subtitulo={subtitulo} color={accent} />
       <ScrollView contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 170 }]} keyboardShouldPersistTaps="handled">
-        <Tarjeta style={{ padding: 0 }}>
-          {lineas.map((l, i) => {
-            const srv = precioServidor.get(l.productId);
-            const conError = errorProducto === l.productId;
-            return (
-              <View key={l.productId} style={{ padding: 12, gap: 10, borderTopWidth: i ? 1 : 0, borderTopColor: colors.lineSoft, backgroundColor: conError ? colors.errorSoft : undefined }}>
-                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                  <FotoProducto nombre={l.nombre} imagenUrl={l.imageUrl} color={accent} size={40} />
-                  <View style={{ flex: 1 }}>
-                    <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{l.nombre}</T>
-                    <T v="chico" style={{ fontSize: 12 }}>
-                      {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {srv ? precio(srv.price) : visitante ? precio(l.precioReferencia) : '…'} c/u
-                    </T>
-                    {srv?.itemDiscount ? (
-                      <View style={{ marginTop: 4 }}>
-                        <Insignia texto={`Oferta −${srv.itemDiscount}%`} bg={colors.tealSoft} fg={colors.tealInk} borde={colors.tealLine} />
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  {conError ? (
-                    <Insignia texto="Ya no está disponible" bg={colors.errorSoft} fg={colors.errorInk} borde={colors.errorLine} />
-                  ) : (
-                    <T v="numero" style={{ fontSize: 15 }}>{srv ? precio(srv.subtotal) : visitante ? precio(l.precioReferencia * l.cantidad) : '…'}</T>
-                  )}
-                  <View style={{ alignItems: 'center', gap: 2 }}>
-                    <SelectorCantidad cantidad={l.cantidad} color={accent} nombre={l.nombre} onCambiar={(n) => cambiar(l, n)} />
-                    <DetalleCantidad cantidad={l.cantidad} unidadesPorBulto={l.unidadesPorBulto} seDivideEn={l.seDivideEn} />
-                  </View>
-                </View>
-              </View>
-            );
-          })}
-        </Tarjeta>
-
-        {visitante && <Aviso tono="info" texto="Precios de referencia. Al registrarte se confirman con tu lista de precios." />}
-        {cot.error && <Aviso texto={cot.error.message} />}
-        {cot.data?.retencion && <Aviso tono="info" texto={cot.data.retencion} />}
-
-        {credito && (
-          <Tarjeta style={{ gap: 10 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <T v="fuerte" style={{ fontSize: 14 }}>Cuenta corriente</T>
-              <Insignia {...clasif} />
-            </View>
-            <Fila etiqueta="Saldo actual" valor={precio(credito.saldo)} />
-            {credito.limite ? <Fila etiqueta="Límite" valor={precio(credito.limite)} /> : null}
-            {credito.disponible != null ? <Fila etiqueta="Disponible" valor={precio(credito.disponible)} /> : null}
-          </Tarjeta>
-        )}
-
-        <Tarjeta style={{ gap: 8 }}>
-          <T v="fuerte" style={{ fontSize: 14 }}>Nota para la distribuidora</T>
-          <TextInput
-            accessibilityLabel="Nota para la distribuidora"
-            value={notas}
-            onChangeText={setNotas}
-            placeholder="Ej.: si no hay aceite de 1,5 L, mandar el de 900 ml"
-            placeholderTextColor={colors.muted}
-            multiline
-            maxLength={500}
-            style={{ minHeight: 64, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 10, fontSize: 14, fontFamily: fonts.body, color: colors.ink, textAlignVertical: 'top' }}
-          />
-        </Tarjeta>
-
-        <Tarjeta style={{ gap: 8 }}>
-          {cot.data?.lista && <Fila etiqueta="Lista de precios" valor={cot.data.lista.nombre} />}
-          <Fila etiqueta="Forma de pago" valor="Cuenta corriente" />
-          <View style={{ height: 1, backgroundColor: colors.lineSoft, marginVertical: 4 }} />
-          <Fila etiqueta="Total" valor={total !== undefined ? precio(total) : '…'} fuerte />
-        </Tarjeta>
+        {listaItems}
+        {avisos}
+        {resumen}
       </ScrollView>
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.line, padding: 16, paddingBottom: 16 + Math.min(insets.bottom, 8) }}>
-        <View style={[columnaLectura, { gap: 8 }]}>
-        {crear.error && <Aviso texto={crear.error.message} />}
-        {visitante ? (
-          <Boton color={accent} icono="account-plus-outline" onPress={() => pedirRegistro('Registrate para enviar tu pedido. Tu carrito queda guardado.')}>
-            Registrarme y enviar{total !== undefined ? ` · ${precio(total)}` : ''}
-          </Boton>
-        ) : (
-          <Boton color={accent} icono="check" onPress={confirmar} cargando={crear.isPending} disabled={!cot.data || cot.isFetching || !!cot.error}>
-            Confirmar pedido{total !== undefined ? ` · ${precio(total)}` : ''}
-          </Boton>
-        )}
-        </View>
+        <View style={[columnaLectura, { gap: 8 }]}>{accion}</View>
       </View>
     </View>
   );
