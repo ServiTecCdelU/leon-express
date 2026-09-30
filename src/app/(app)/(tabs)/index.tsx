@@ -8,6 +8,7 @@ import { BarraSuperior } from '@/components/barra-superior';
 import { EstadoPedidoInsignia } from '@/components/estado-pedido';
 import { OfertasInicio } from '@/components/ofertas-inicio';
 import { BannerRegistro } from '@/components/registro';
+import { columnaLectura } from '@/components/marco-app';
 import { GrillaRubros, SelectorRubros } from '@/components/rubros';
 import { Boton, Chip, Icono, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
@@ -136,15 +137,17 @@ export default function Inicio() {
           />
         }
       >
-        <View style={{ backgroundColor: tint(accent, 0.07), paddingHorizontal: 16, paddingTop: 18, paddingBottom: 18, gap: 14, borderBottomWidth: 1, borderBottomColor: tint(accent, 0.18) }}>
-          <View style={{ gap: 2 }}>
-            <T v="chico" style={{ color: colors.tealInk, fontFamily: fonts.bodyMedium }}>{nombre ? `${saludo()}, ${nombre}` : saludo()}</T>
-            <T v="titulo" style={{ fontSize: 24, lineHeight: 30 }}>¿Qué vas a pedir hoy?</T>
+        <View style={{ backgroundColor: tint(accent, 0.07), paddingTop: 18, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: tint(accent, 0.18) }}>
+          <View style={[columnaLectura, { paddingHorizontal: 16, gap: 14 }]}>
+            <View style={{ gap: 2 }}>
+              <T v="chico" style={{ color: colors.tealInk, fontFamily: fonts.bodyMedium }}>{nombre ? `${saludo()}, ${nombre}` : saludo()}</T>
+              <T v="titulo" style={{ fontSize: 24, lineHeight: 30 }}>¿Qué vas a pedir hoy?</T>
+            </View>
+            <BuscadorInicio accent={accent} />
           </View>
-          <BuscadorInicio accent={accent} />
         </View>
 
-        <View style={{ padding: 16, gap: 12 }}>
+        <View style={[columnaLectura, { padding: 16, gap: 12 }]}>
           {comercios.length > 1 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {comercios.map((c) => (

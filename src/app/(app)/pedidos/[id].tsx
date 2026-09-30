@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { ESTADOS, EstadoPedidoInsignia } from '@/components/estado-pedido';
+import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Cargando, Fila, Icono, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaHora, precio } from '@/lib/format';
@@ -33,7 +34,7 @@ export default function Seguimiento() {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <BarraSuperior titulo="Pedido" color={accent} izquierda={volver} />
-        <View style={{ padding: 16 }}><Aviso texto="No encontramos este pedido." /></View>
+        <View style={[columnaLectura, { padding: 16 }]}><Aviso texto="No encontramos este pedido." /></View>
       </View>
     );
   }
@@ -58,7 +59,7 @@ export default function Seguimiento() {
         izquierda={volver}
         derecha={<EstadoPedidoInsignia estado={pedido.estado} retenido={pedido.retenido} />}
       />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
+      <ScrollView contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 32 }]}>
         {nuevo === '1' && !pedido.retenido && <Aviso tono="ok" texto="Listo, tu pedido llegó a la distribuidora." />}
         {pedido.retenido && <Aviso tono="info" texto="La distribuidora va a revisar el pedido por el estado de tu cuenta antes de prepararlo." />}
 

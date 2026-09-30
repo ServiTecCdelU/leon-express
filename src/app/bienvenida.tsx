@@ -3,13 +3,14 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { columnaLectura } from '@/components/marco-app';
 import { Boton, Icono, T } from '@/components/ui';
 import { ACCENT_DEFAULT, colors, fonts, radius, tint } from '@/theme';
 
 export default function Bienvenida() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24, gap: 24 }}>
+      <ScrollView contentContainerStyle={[columnaLectura, { maxWidth: 520, flexGrow: 1, justifyContent: 'center', padding: 24, gap: 24 }]}>
         <View style={{ alignItems: 'center', gap: 12 }}>
           <View style={{ width: 64, height: 64, borderRadius: radius.lg, backgroundColor: ACCENT_DEFAULT, alignItems: 'center', justifyContent: 'center' }}>
             <Icono name="storefront-outline" color={colors.white} size={32} />

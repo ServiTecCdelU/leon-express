@@ -2,7 +2,7 @@
 // completa para elegir entre todos (la tira de chips del catálogo muestra solo algunos).
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { anchoModalWeb } from '@/components/marco-celular';
+import { anchoHoja } from '@/components/marco-app';
 import { Icono, T, type IconName } from '@/components/ui';
 import { iconoRubro, nombreRubro } from '@/lib/rubros';
 import { colors, fonts, radius, tint } from '@/theme';
@@ -98,7 +98,7 @@ export function SelectorRubros({
       <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
         <Pressable accessibilityLabel="Cerrar rubros" onPress={onCerrar} style={{ flex: 1 }} />
         <View
-          style={[anchoModalWeb, {
+          style={[anchoHoja, {
             maxHeight: '82%',
             backgroundColor: colors.card,
             borderTopLeftRadius: 24,

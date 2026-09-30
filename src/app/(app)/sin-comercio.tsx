@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Icono, T, Tarjeta } from '@/components/ui';
 import { parseQrDistribuidora } from '@/lib/qr-distribuidora';
 import { useCanjearInvitacion } from '@/lib/queries';
@@ -38,7 +39,7 @@ export default function SinComercio() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[columnaLectura, { maxWidth: 520, padding: 20, gap: 16, flexGrow: 1, justifyContent: 'center' }]} keyboardShouldPersistTaps="handled">
         <View style={{ width: 48, height: 48, borderRadius: radius.md, backgroundColor: tint(ACCENT_DEFAULT), alignItems: 'center', justifyContent: 'center' }}>
           <Icono name="store-plus-outline" size={26} color={ACCENT_DEFAULT} />
         </View>

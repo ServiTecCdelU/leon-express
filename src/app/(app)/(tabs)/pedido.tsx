@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarraSuperior } from '@/components/barra-superior';
 import { DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
 import { FotoProducto } from '@/components/foto-producto';
+import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Fila, Insignia, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { ApiError } from '@/lib/api';
@@ -81,7 +82,7 @@ export default function Pedido() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <BarraSuperior titulo="Carrito" subtitulo={`${lineas.length} ${lineas.length === 1 ? 'producto' : 'productos'}`} color={accent} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 170 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 170 }]} keyboardShouldPersistTaps="handled">
         <Tarjeta style={{ padding: 0 }}>
           {lineas.map((l, i) => {
             const srv = precioServidor.get(l.productId);
@@ -156,7 +157,8 @@ export default function Pedido() {
         </Tarjeta>
       </ScrollView>
 
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.line, padding: 16, paddingBottom: 16 + Math.min(insets.bottom, 8), gap: 8 }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.line, padding: 16, paddingBottom: 16 + Math.min(insets.bottom, 8) }}>
+        <View style={[columnaLectura, { gap: 8 }]}>
         {crear.error && <Aviso texto={crear.error.message} />}
         {visitante ? (
           <Boton color={accent} icono="account-plus-outline" onPress={() => pedirRegistro('Registrate para enviar tu pedido. Tu carrito queda guardado.')}>
@@ -167,6 +169,7 @@ export default function Pedido() {
             Confirmar pedido{total !== undefined ? ` · ${precio(total)}` : ''}
           </Boton>
         )}
+        </View>
       </View>
     </View>
   );

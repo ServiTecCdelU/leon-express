@@ -2,7 +2,7 @@
 // alta en la distribuidora es automática); con sesión y sin alta todavía, la reintenta.
 import { useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
-import { anchoModalWeb } from '@/components/marco-celular';
+import { anchoHoja } from '@/components/marco-app';
 import { Aviso, Boton, Icono, T } from '@/components/ui';
 import { ingresarConGoogle } from '@/lib/google';
 import { useAltaQr } from '@/lib/queries';
@@ -50,7 +50,7 @@ export function RecordatorioRegistro({ conSesion, accent }: { conSesion: boolean
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={cerrar}>
       <Pressable accessibilityLabel="Cerrar" onPress={cerrar} style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' }}>
-        <Pressable onPress={() => {}} style={[{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32, gap: 14 }, anchoModalWeb]}>
+        <Pressable onPress={() => {}} style={[{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32, gap: 14 }, anchoHoja]}>
           <View style={{ width: 48, height: 48, borderRadius: radius.md, backgroundColor: tint(accent), alignItems: 'center', justifyContent: 'center' }}>
             <Icono name={conSesion ? 'account-check-outline' : 'account-plus-outline'} color={accent} size={26} />
           </View>

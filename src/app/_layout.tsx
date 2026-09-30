@@ -10,7 +10,6 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { MarcoCelular } from '@/components/marco-celular';
 import { useHidratado } from '@/hooks/use-hidratado';
 import { ApiError } from '@/lib/api';
 import { useComercioStore } from '@/state/comercio';
@@ -81,9 +80,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <SesionProvider>
         <StatusBar style="dark" />
-        <MarcoCelular>
-          <Navegacion />
-        </MarcoCelular>
+        <Navegacion />
       </SesionProvider>
     </QueryClientProvider>
   );

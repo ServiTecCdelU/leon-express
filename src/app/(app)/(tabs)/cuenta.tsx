@@ -2,6 +2,7 @@
 // llegan en la Fase 2 (la API todavía no los expone).
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
+import { columnaLectura } from '@/components/marco-app';
 import { PieServiTec } from '@/components/pie-servitec';
 import { BannerRegistro } from '@/components/registro';
 import { Aviso, Boton, Cargando, Fila, Insignia, T, Tarjeta } from '@/components/ui';
@@ -26,7 +27,7 @@ function CuentaVisitante() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <BarraSuperior titulo="Cuenta" subtitulo={comercio?.nombre} color={accent} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
+      <ScrollView contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 32 }]}>
         <BannerRegistro conSesion={conSesion} accent={accent} />
         <Tarjeta style={{ gap: 8 }}>
           <T v="etiqueta">Estás viendo</T>
@@ -67,7 +68,7 @@ function CuentaCliente() {
         <Cargando />
       ) : (
         <ScrollView
-          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
+          contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 32 }]}
           refreshControl={<RefreshControl refreshing={cuenta.isRefetching} onRefresh={() => cuenta.refetch()} />}
         >
           {cuenta.error && <Aviso texto={cuenta.error.message} />}

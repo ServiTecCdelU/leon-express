@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
+import { anchoHoja, useAnchoApp } from '@/components/marco-app';
 import { ProductoFila, ProductoTarjeta } from '@/components/producto-fila';
 import { iconoDeRubro, SelectorRubros } from '@/components/rubros';
 import { Aviso, Boton, Cargando, Chip, Icono, T } from '@/components/ui';
@@ -28,6 +29,18 @@ function useDebounce<T>(valor: T, ms: number): T {
 
 const texto = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '');
 const miles = (n: number) => n.toLocaleString('es-AR');
+
+const PAD = 16;
+const GAP = 8;
+const ANCHO_TARJETA = 180;
+const ANCHO_FILA = 360;
+
+/** Columnas del catálogo según el ancho: el celular queda como siempre (1 en lista, 2 en cuadrícula). */
+function columnasPara(ancho: number, grilla: boolean): number {
+  const util = ancho - PAD * 2;
+  if (grilla) return Math.max(2, Math.min(8, Math.floor((util + GAP) / (ANCHO_TARJETA + GAP))));
+  return Math.max(1, Math.min(4, Math.floor((util + GAP) / (ANCHO_FILA + GAP))));
+}
 
 function BarraBusqueda({
   valor,
@@ -147,7 +160,7 @@ function CarritoFlotante({ cantidad, total, accent }: { cantidad: number; total:
       accessibilityRole="button"
       accessibilityLabel="Ver carrito"
       onPress={() => router.navigate('/pedido')}
-      style={{ position: 'absolute', left: 16, right: 16, bottom: 12, height: 52, borderRadius: radius.md, backgroundColor: accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, elevation: 4, shadowColor: colors.ink, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }}
+      style={[anchoHoja, { position: 'absolute', left: 16, right: 16, bottom: 12, marginHorizontal: 'auto', width: undefined, height: 52, borderRadius: radius.md, backgroundColor: accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, elevation: 4, shadowColor: colors.ink, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }]}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Icono name="cart-outline" color={colors.white} size={20} />
@@ -195,6 +208,10 @@ export default function Catalogo() {
   const setCantidad = useCarritoStore((s) => s.setCantidad);
   const { vista, setVista } = usePreferencias();
   const grilla = vista === 'cuadricula';
+  const ancho = useAnchoApp();
+  const columnas = columnasPara(ancho, grilla);
+  // Ancho fijo por columna: así la última fila incompleta no se estira.
+  const anchoItem = columnas > 1 ? (ancho - PAD * 2 - GAP * (columnas - 1)) / columnas : undefined;
 
   const productos = useMemo(() => catalogo.data?.pages.flatMap((p) => p.items) ?? [], [catalogo.data]);
   const total = catalogo.data?.pages[0]?.total;
@@ -245,19 +262,21 @@ export default function Catalogo() {
       ) : (
         <FlatList
           // numColumns no puede cambiar en caliente: la key fuerza a rearmar la lista.
-          key={vista}
+          key={`${vista}-${columnas}`}
           data={productos}
           keyExtractor={(p) => p.id}
-          numColumns={grilla ? 2 : 1}
-          columnWrapperStyle={grilla ? { gap: 8 } : undefined}
-          contentContainerStyle={{ padding: 16, paddingTop: 8, gap: 8, paddingBottom: lineas.length ? 100 : 24 }}
-          renderItem={({ item }) =>
-            grilla ? (
-              <ProductoTarjeta producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
-            ) : (
-              <ProductoFila producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
-            )
-          }
+          numColumns={columnas}
+          columnWrapperStyle={columnas > 1 ? { gap: GAP } : undefined}
+          contentContainerStyle={{ padding: PAD, paddingTop: 8, gap: GAP, paddingBottom: lineas.length ? 100 : 24 }}
+          renderItem={({ item }) => (
+            <View style={anchoItem ? { width: anchoItem } : undefined}>
+              {grilla ? (
+                <ProductoTarjeta producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
+              ) : (
+                <ProductoFila producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
+              )}
+            </View>
+          )}
           onEndReached={() => catalogo.hasNextPage && !catalogo.isFetchingNextPage && catalogo.fetchNextPage()}
           onEndReachedThreshold={0.5}
           ListFooterComponent={catalogo.isFetchingNextPage ? <Cargando /> : null}

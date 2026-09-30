@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Icono, T, Tarjeta } from '@/components/ui';
 import { ingresarConGoogle } from '@/lib/google';
 import { useComercioPublico } from '@/lib/queries';
@@ -33,7 +34,7 @@ export default function Ingresar() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20, gap: 20 }}>
+      <ScrollView contentContainerStyle={[columnaLectura, { maxWidth: 520, flexGrow: 1, justifyContent: 'center', padding: 20, gap: 20 }]}>
         <View style={{ alignItems: 'center', gap: 10 }}>
           <View style={{ width: 52, height: 52, borderRadius: radius.lg, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
             <Icono name="storefront-outline" color={colors.white} size={26} />

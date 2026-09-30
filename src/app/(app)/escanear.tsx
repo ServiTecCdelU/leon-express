@@ -97,7 +97,7 @@ export default function Escanear() {
 
   if (!permiso.granted) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, padding: 24, paddingTop: insets.top + 24, gap: 16, justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, padding: 24, paddingTop: insets.top + 24, gap: 16, justifyContent: 'center', width: '100%', maxWidth: 520, alignSelf: 'center' }}>
         <View style={{ width: 52, height: 52, borderRadius: radius.lg, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
           <Icono name="barcode-scan" color={colors.white} size={28} />
         </View>
@@ -147,7 +147,7 @@ export default function Escanear() {
       )}
 
       {/* Panel inferior */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: insets.bottom + 16, gap: 12, maxHeight: '70%' }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxWidth: 560, marginHorizontal: 'auto', backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: insets.bottom + 16, gap: 12, maxHeight: '70%' }}>
         {estado.tipo === 'escaneando' && (
           <>
             {agregado ? <Aviso tono="ok" texto={`Agregado: ${agregado}`} /> : <T v="chico" style={{ textAlign: 'center' }}>Apuntá la cámara al código de barras del producto.</T>}

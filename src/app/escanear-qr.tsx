@@ -89,7 +89,7 @@ export default function EscanearQr() {
 
   if (!permiso.granted || sinCamara) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, padding: 24, paddingTop: insets.top + 24, gap: 16, justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, padding: 24, paddingTop: insets.top + 24, gap: 16, justifyContent: 'center', width: '100%', maxWidth: 520, alignSelf: 'center' }}>
         <View style={{ width: 52, height: 52, borderRadius: radius.lg, backgroundColor: ACCENT_DEFAULT, alignItems: 'center', justifyContent: 'center' }}>
           <Icono name="qrcode-scan" color={colors.white} size={28} />
         </View>
@@ -137,7 +137,7 @@ export default function EscanearQr() {
         <View pointerEvents="none" style={{ position: 'absolute', top: '32%', left: '15%', right: '15%', height: 200, borderRadius: radius.lg, borderWidth: 3, borderColor: colors.white, opacity: 0.9 }} />
       )}
 
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: insets.bottom + 16, gap: 12 }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxWidth: 560, marginHorizontal: 'auto', backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: insets.bottom + 16, gap: 12 }}>
         {estado.tipo === 'escaneando' && (
           <T v="chico" style={{ textAlign: 'center' }}>
             Apuntá la cámara al QR de la distribuidora o de tu invitación.
