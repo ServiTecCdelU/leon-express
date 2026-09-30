@@ -10,14 +10,13 @@ import { OfertasInicio } from '@/components/ofertas-inicio';
 import { BannerRegistro } from '@/components/registro';
 import { columnaAncha, useEsAncha } from '@/components/marco-app';
 import { GrillaRubros, SelectorRubros } from '@/components/rubros';
-import { Boton, Chip, Icono, T, Tarjeta, type IconName } from '@/components/ui';
+import { Boton, Icono, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaCorta, precio } from '@/lib/format';
 import { useCuenta, usePedidos, useRubros } from '@/lib/queries';
 import { rubrosVisibles } from '@/lib/rubros';
 import type { PedidoResumen } from '@/lib/tipos';
 import { useCarritoStore } from '@/state/carrito';
-import { useComercioStore } from '@/state/comercio';
 import { colors, fonts, radius, tarjetaBase, tint } from '@/theme';
 
 const irACatalogo = (params: Record<string, string>) => router.navigate({ pathname: '/catalogo', params });
@@ -115,8 +114,7 @@ function Laterales({ ultimo, accent, onRepetir, fila }: { ultimo?: PedidoResumen
 }
 
 export default function Inicio() {
-  const { comercio, comercios, slug, accent, visitante, conSesion } = useComercioActivo();
-  const setSlugActivo = useComercioStore((s) => s.setSlugActivo);
+  const { comercio, slug, accent, visitante, conSesion } = useComercioActivo();
   const cuenta = useCuenta(slug!, !visitante);
   const pedidos = usePedidos(slug!, !visitante);
   const rubrosQuery = useRubros(slug!);
@@ -168,14 +166,6 @@ export default function Inicio() {
             último pedido y accesos en una columna a la derecha. */}
         <View style={[columnaAncha, { padding: 16, gap: ancha ? 20 : 12, flexDirection: ancha ? 'row' : 'column', alignItems: 'flex-start' }]}>
           <View style={{ gap: 12, width: ancha ? undefined : '100%', flex: ancha ? 1 : undefined }}>
-            {comercios.length > 1 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {comercios.map((c) => (
-                  <Chip key={c.slug} texto={c.nombre} icono="store-outline" activo={c.slug === slug} color={accent} onPress={() => setSlugActivo(c.slug)} />
-                ))}
-              </ScrollView>
-            )}
-
             {visitante && <BannerRegistro conSesion={conSesion} accent={accent} />}
 
             <OfertasInicio slug={slug!} accent={accent} enGrilla={ancha} />

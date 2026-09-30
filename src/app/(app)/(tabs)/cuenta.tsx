@@ -13,7 +13,6 @@ import { fechaCorta, precio } from '@/lib/format';
 import { useCuenta, useMe } from '@/lib/queries';
 import type { Cuenta as CuentaApp } from '@/lib/tipos';
 import { supabase } from '@/lib/supabase';
-import { useComercioStore } from '@/state/comercio';
 import { colors, radius, tint } from '@/theme';
 
 const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; borde: string }> = {
@@ -22,19 +21,15 @@ const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; bor
   moroso: { texto: 'Saldo vencido', bg: colors.errorSoft, fg: colors.errorInk, borde: colors.errorLine },
 };
 
-// Visitante (entró por el QR): registrarse, cambiar de distribuidora y salir.
+// Visitante (entró por el QR): registrarse y salir.
 function CuentaVisitante() {
   const { accent, comercio, conSesion } = useComercioActivo();
-  const setDistribuidora = useComercioStore((s) => s.setDistribuidora);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <BarraSuperior titulo="Cuenta" subtitulo={comercio?.nombre} color={accent} />
       <ScrollView contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 32 }]}>
         <BannerRegistro conSesion={conSesion} accent={accent} />
-        <Boton variante="borde" icono="qrcode-scan" onPress={() => setDistribuidora(null)}>
-          Cambiar de distribuidora
-        </Boton>
         {conSesion && (
           <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()}>
             Cerrar sesión
