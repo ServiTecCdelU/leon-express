@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
+import { CarruselProductos } from '@/components/carrusel-productos';
 import { EstadoPedidoInsignia } from '@/components/estado-pedido';
 import { OfertasInicio } from '@/components/ofertas-inicio';
 import { BannerRegistro } from '@/components/registro';
@@ -13,7 +14,7 @@ import { GrillaRubros, SelectorRubros } from '@/components/rubros';
 import { Boton, Icono, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaCorta, precio } from '@/lib/format';
-import { useCuenta, usePedidos, useRubros } from '@/lib/queries';
+import { useCuenta, useDestacados, useMasElegidos, usePedidos, useRubros } from '@/lib/queries';
 import { rubrosVisibles } from '@/lib/rubros';
 import type { PedidoResumen } from '@/lib/tipos';
 import { useCarritoStore } from '@/state/carrito';
@@ -117,6 +118,8 @@ export default function Inicio() {
   const { comercio, slug, accent, visitante, conSesion } = useComercioActivo();
   const cuenta = useCuenta(slug!, !visitante);
   const pedidos = usePedidos(slug!, !visitante);
+  const masElegidos = useMasElegidos(slug!);
+  const destacados = useDestacados(slug!);
   const rubrosQuery = useRubros(slug!);
   const rubros = useMemo(() => rubrosVisibles(rubrosQuery.data ?? []), [rubrosQuery.data]);
   const [verRubros, setVerRubros] = useState(false);
@@ -148,6 +151,8 @@ export default function Inicio() {
               cuenta.refetch();
               pedidos.refetch();
               rubrosQuery.refetch();
+              masElegidos.refetch();
+              destacados.refetch();
             }}
           />
         }
@@ -169,6 +174,10 @@ export default function Inicio() {
             {visitante && <BannerRegistro conSesion={conSesion} accent={accent} />}
 
             <OfertasInicio slug={slug!} accent={accent} enGrilla={ancha} />
+
+            <CarruselProductos titulo="Los más elegidos" icono="fire" slug={slug!} accent={accent} productos={masElegidos.data} cargando={masElegidos.isLoading} />
+
+            <CarruselProductos titulo="Destacados de la semana" icono="star-outline" slug={slug!} accent={accent} productos={destacados.data} cargando={destacados.isLoading} />
 
             {rubros.length > 0 && (
               <>

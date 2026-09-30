@@ -11,6 +11,7 @@ import type {
   PedidoCreado,
   OfertaApp,
   PedidoResumen,
+  ProductoApp,
 } from '@/lib/tipos';
 
 const PAGE_SIZE = 20;
@@ -21,6 +22,8 @@ export const qk = {
   catalogo: (slug: string, q: string, rubro: string) => ['catalogo', slug, q, rubro] as const,
   rubros: (slug: string) => ['rubros', slug] as const,
   ofertas: (slug: string) => ['ofertas', slug] as const,
+  masElegidos: (slug: string) => ['mas-elegidos', slug] as const,
+  destacados: (slug: string) => ['destacados', slug] as const,
   cotizacion: (slug: string, clave: string) => ['cotizacion', slug, clave] as const,
   pedidos: (slug: string) => ['pedidos', slug] as const,
   cuenta: (slug: string) => ['cuenta', slug] as const,
@@ -60,6 +63,24 @@ export function useOfertas(slug: string) {
   return useQuery({
     queryKey: qk.ofertas(slug),
     queryFn: () => api<OfertaApp[]>(`/comercios/${slug}/ofertas`, { auth: 'opcional' }),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** "Los más elegidos": los más vendidos de la distribuidora (todos los canales, no solo la app). */
+export function useMasElegidos(slug: string) {
+  return useQuery({
+    queryKey: qk.masElegidos(slug),
+    queryFn: () => api<ProductoApp[]>(`/comercios/${slug}/mas-elegidos`, { auth: 'opcional' }),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** "Destacados de la semana": los que el admin eligió a mano en el panel. */
+export function useDestacados(slug: string) {
+  return useQuery({
+    queryKey: qk.destacados(slug),
+    queryFn: () => api<ProductoApp[]>(`/comercios/${slug}/destacados`, { auth: 'opcional' }),
     staleTime: 5 * 60_000,
   });
 }
