@@ -1,4 +1,4 @@
-// Cuenta: saldo y crédito, datos del comercio, cerrar sesión (o registrarse, si es visitante). Movimientos e "informar pago"
+// Cuenta: datos del comercio, puntos de fidelidad, saldo y crédito, cerrar sesión (o registrarse, si es visitante). Movimientos e "informar pago"
 // llegan en la Fase 2 (la API todavía no los expone).
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
@@ -7,13 +7,14 @@ import { HojaDatosComercio } from '@/components/datos-comercio';
 import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app';
 import { PieServiTec } from '@/components/pie-servitec';
 import { BannerRegistro } from '@/components/registro';
-import { Aviso, Boton, Cargando, Fila, Insignia, T, Tarjeta } from '@/components/ui';
+import { Aviso, Boton, Cargando, Fila, Icono, Insignia, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
-import { precio } from '@/lib/format';
+import { fechaCorta, precio } from '@/lib/format';
 import { useCuenta, useMe } from '@/lib/queries';
+import type { Cuenta as CuentaApp } from '@/lib/tipos';
 import { supabase } from '@/lib/supabase';
 import { useComercioStore } from '@/state/comercio';
-import { colors } from '@/theme';
+import { colors, radius, tint } from '@/theme';
 
 const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; borde: string }> = {
   normal: { texto: 'Al día', bg: colors.okSoft, fg: colors.okInk, borde: '#a7f3d0' },
@@ -31,11 +32,6 @@ function CuentaVisitante() {
       <BarraSuperior titulo="Cuenta" subtitulo={comercio?.nombre} color={accent} />
       <ScrollView contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 32 }]}>
         <BannerRegistro conSesion={conSesion} accent={accent} />
-        <Tarjeta style={{ gap: 8 }}>
-          <T v="etiqueta">Estás viendo</T>
-          <T v="fuerte">{comercio?.nombre}</T>
-          <T v="chico">Precios de referencia. Al registrarte ves los tuyos y podés hacer pedidos.</T>
-        </Tarjeta>
         <Boton variante="borde" icono="qrcode-scan" onPress={() => setDistribuidora(null)}>
           Cambiar de distribuidora
         </Boton>
@@ -55,20 +51,102 @@ export default function Cuenta() {
   return visitante ? <CuentaVisitante /> : <CuentaCliente />;
 }
 
+function Dato({ icono, texto }: { icono: IconName; texto: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Icono name={icono} size={18} color={colors.muted} />
+      <T style={{ flex: 1, fontSize: 14, color: colors.inkSoft }}>{texto}</T>
+    </View>
+  );
+}
+
+function TarjetaDatos({ cuenta, telefonoIngreso, accent, onEditar }: { cuenta: CuentaApp; telefonoIngreso?: string | null; accent: string; onEditar: () => void }) {
+  const cli = cuenta.cliente;
+  return (
+    <Tarjeta style={{ gap: 8 }}>
+      <T v="etiqueta">Tus datos</T>
+      <T v="h2">{cli.nombre}</T>
+      <View style={{ gap: 6 }}>
+        <Dato icono="map-marker-outline" texto={[cli.direccion, cli.localidad].filter(Boolean).join(', ') || 'Sin dirección cargada'} />
+        <Dato icono="phone-outline" texto={cli.telefono || 'Sin teléfono cargado'} />
+        {cuenta.vendedor ? <Dato icono="account-tie-outline" texto={`Vendedor: ${cuenta.vendedor}`} /> : null}
+        {telefonoIngreso ? <Dato icono="login" texto={`Ingresás con ${telefonoIngreso}`} /> : null}
+      </View>
+      <Boton variante="suave" color={accent} icono="pencil-outline" chico onPress={onEditar} style={{ marginTop: 4 }}>
+        {cuenta.datosCompletos ? 'Editar mis datos' : 'Completar mis datos'}
+      </Boton>
+    </Tarjeta>
+  );
+}
+
+/** Puntos de fidelidad (si la distribuidora tiene el módulo): saldo y últimos movimientos. */
+function TarjetaPuntos({ puntos, accent }: { puntos: NonNullable<CuentaApp['puntos']>; accent: string }) {
+  return (
+    <Tarjeta style={{ gap: 10, borderColor: tint(accent, 0.3), backgroundColor: tint(accent, 0.04) }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
+          <Icono name="star-circle-outline" color={colors.white} size={24} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <T v="etiqueta">Tus puntos</T>
+          <T v="titulo" style={{ color: accent }}>{puntos.saldo.toLocaleString('es-AR')}</T>
+        </View>
+      </View>
+      <T v="chico" style={{ fontSize: 13 }}>
+        Sumás 1 punto cada {precio(puntos.cadaPesos)} de cada pedido entregado. Muy pronto vas a poder canjearlos por gorras, remeras y más.
+      </T>
+      {puntos.movimientos.length > 0 && (
+        <View style={{ gap: 6, borderTopWidth: 1, borderTopColor: colors.lineSoft, paddingTop: 10 }}>
+          {puntos.movimientos.slice(0, 5).map((m, i) => (
+            <View key={`${m.fecha}-${i}`} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+              <T v="chico" style={{ flex: 1 }} numberOfLines={1}>{fechaCorta(m.fecha)} · {m.descripcion ?? 'Movimiento'}</T>
+              <T v="fuerte" style={{ fontSize: 14, color: m.puntos > 0 ? colors.okInk : colors.errorInk }}>
+                {m.puntos > 0 ? '+' : ''}{m.puntos}
+              </T>
+            </View>
+          ))}
+        </View>
+      )}
+    </Tarjeta>
+  );
+}
+
+function TarjetaSaldo({ cuenta, accent }: { cuenta: CuentaApp; accent: string }) {
+  const clasif = CLASIFICACION[cuenta.credito.clasificacion ?? 'normal'] ?? CLASIFICACION.atrasado;
+  const usado = cuenta.credito.limite ? Math.min(100, (cuenta.credito.saldo / cuenta.credito.limite) * 100) : null;
+  return (
+    <Tarjeta style={{ gap: 12 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <T v="etiqueta">Saldo a pagar</T>
+        <Insignia {...clasif} />
+      </View>
+      <T v="titulo">{precio(cuenta.credito.saldo)}</T>
+      {usado !== null && (
+        <View style={{ gap: 8 }}>
+          <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.lineSoft }}>
+            <View style={{ width: `${usado}%`, height: 8, borderRadius: 4, backgroundColor: accent }} />
+          </View>
+          <Fila etiqueta="Disponible" valor={precio(cuenta.credito.disponible ?? 0)} />
+          <Fila etiqueta="Límite de crédito" valor={precio(cuenta.credito.limite!)} />
+        </View>
+      )}
+    </Tarjeta>
+  );
+}
+
 function CuentaCliente() {
   const { slug, accent, comercio } = useComercioActivo();
   const cuenta = useCuenta(slug!);
   const me = useMe();
   const c = cuenta.data;
-  const clasif = CLASIFICACION[c?.credito.clasificacion ?? 'normal'] ?? CLASIFICACION.atrasado;
-  const usado = c?.credito.limite ? Math.min(100, (c.credito.saldo / c.credito.limite) * 100) : null;
-  // En tablet apaisada y PC, saldo y datos del comercio lado a lado.
+  // En tablet apaisada y PC, las tarjetas van lado a lado.
   const ancha = useEsAncha();
   const [editando, setEditando] = useState(false);
+  const columna = ancha ? { flex: 1, minWidth: 280 } : undefined;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <BarraSuperior titulo="Cuenta corriente" subtitulo={comercio?.nombre} color={accent} />
+      <BarraSuperior titulo="Mi cuenta" subtitulo={comercio?.nombre} color={accent} />
       {cuenta.isLoading ? (
         <Cargando />
       ) : (
@@ -78,40 +156,21 @@ function CuentaCliente() {
         >
           {cuenta.error && <Aviso texto={cuenta.error.message} />}
 
-          <View style={{ flexDirection: ancha ? 'row' : 'column', gap: 12, alignItems: ancha ? 'flex-start' : 'stretch' }}>
           {c && (
-            <Tarjeta style={{ gap: 12, flex: ancha ? 1 : undefined }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <T v="etiqueta">Saldo a pagar</T>
-                <Insignia {...clasif} />
+            <View style={{ flexDirection: ancha ? 'row' : 'column', flexWrap: ancha ? 'wrap' : 'nowrap', gap: 12, alignItems: ancha ? 'flex-start' : 'stretch' }}>
+              <View style={columna}>
+                <TarjetaDatos cuenta={c} telefonoIngreso={me.data?.telefono} accent={accent} onEditar={() => setEditando(true)} />
               </View>
-              <T v="titulo">{precio(c.credito.saldo)}</T>
-              {usado !== null && (
-                <View style={{ gap: 8 }}>
-                  <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.lineSoft }}>
-                    <View style={{ width: `${usado}%`, height: 8, borderRadius: 4, backgroundColor: accent }} />
-                  </View>
-                  <Fila etiqueta="Disponible" valor={precio(c.credito.disponible ?? 0)} />
-                  <Fila etiqueta="Límite de crédito" valor={precio(c.credito.limite!)} />
+              {c.puntos && (
+                <View style={columna}>
+                  <TarjetaPuntos puntos={c.puntos} accent={accent} />
                 </View>
               )}
-            </Tarjeta>
+              <View style={columna}>
+                <TarjetaSaldo cuenta={c} accent={accent} />
+              </View>
+            </View>
           )}
-
-          {c && (
-            <Tarjeta style={{ gap: 8, flex: ancha ? 1 : undefined }}>
-              <T v="etiqueta">Datos del comercio</T>
-              <T v="fuerte">{c.cliente.nombre}</T>
-              {c.cliente.direccion ? <T v="chico">{[c.cliente.direccion, c.cliente.localidad].filter(Boolean).join(', ')}</T> : null}
-              {c.cliente.telefono ? <Fila etiqueta="Teléfono" valor={c.cliente.telefono} /> : null}
-              {c.vendedor ? <Fila etiqueta="Vendedor" valor={c.vendedor} /> : null}
-              {me.data?.telefono ? <Fila etiqueta="Ingresás con" valor={me.data.telefono} /> : null}
-              <Boton variante="suave" color={accent} icono="pencil-outline" chico onPress={() => setEditando(true)} style={{ marginTop: 4 }}>
-                {c.datosCompletos ? 'Editar datos del comercio' : 'Completar datos del comercio'}
-              </Boton>
-            </Tarjeta>
-          )}
-          </View>
 
           <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()} style={ancha ? { alignSelf: 'flex-start' } : undefined}>
             Cerrar sesión

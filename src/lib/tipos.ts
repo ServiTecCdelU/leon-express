@@ -97,6 +97,13 @@ export interface Cuenta {
   datosCompletos: boolean;
   vendedor: string | null;
   credito: Credito;
+  /** null si la distribuidora no tiene el módulo de puntos. */
+  puntos: {
+    saldo: number;
+    /** Pesos por punto (regla de la distribuidora). */
+    cadaPesos: number;
+    movimientos: { fecha: string; puntos: number; descripcion: string | null }[];
+  } | null;
 }
 
 /** Datos del comercio que se piden al confirmar el pedido (van a la ficha del cliente). */
