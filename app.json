@@ -63,6 +63,7 @@
     },
     "owner": "serviteccdelu",
     "extra": {
+      "appId": "leon-express",
       "router": {},
       "eas": {
         "projectId": "7d7ecc25-0858-4614-8d2a-d54dd7e4460b"

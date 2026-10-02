@@ -1,6 +1,7 @@
 // Hooks de datos (TanStack Query) sobre /api/app/v1.
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import type { VersionPublicada } from '@/lib/version-app';
 import type {
   Comercio,
   Cotizacion,
@@ -27,6 +28,7 @@ export const qk = {
   cotizacion: (slug: string, clave: string) => ['cotizacion', slug, clave] as const,
   pedidos: (slug: string) => ['pedidos', slug] as const,
   cuenta: (slug: string) => ['cuenta', slug] as const,
+  version: (app: string) => ['version', app] as const,
 };
 
 export function useMe(enabled = true) {
@@ -154,5 +156,15 @@ export function useGuardarDatosComercio(slug: string) {
   return useMutation({
     mutationFn: (datos: DatosComercio) => api<{ guardado: boolean }>(`/comercios/${slug}/datos`, { method: 'PUT', body: datos }),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.cuenta(slug) }),
+  });
+}
+
+/** Última versión publicada de la app (y la mínima obligatoria), para el aviso de actualización. */
+export function useVersionApp(app: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: qk.version(app ?? ''),
+    queryFn: () => api<VersionPublicada | null>(`/version?app=${encodeURIComponent(app!)}`, { auth: false }),
+    enabled: enabled && !!app,
+    staleTime: 30 * 60_000,
   });
 }
