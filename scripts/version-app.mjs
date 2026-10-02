@@ -1,10 +1,15 @@
-// Después de un build de EAS exitoso: guarda el versionCode nuevo de app.json como
-// `ultima_version` de esta app en el SaaS (tabla app_versiones, SQL/108), para que las
-// versiones más viejas muestren "Hay una nueva versión". Y commitea el app.json con el número.
-// Lo corre `npm run build:android`; también se puede correr solo: `node scripts/publicar-version.mjs`.
+// Versión de la app (android.versionCode de app.json) y su publicación en el SaaS.
+//   node scripts/version-app.mjs commit    → commitea app.json con el número que subió EAS.
+//                                            Lo corre `npm run build:android` al terminar el build.
+//   node scripts/version-app.mjs publicar  → guarda ese número como `ultima_version` de esta app
+//                                            (tabla app_versiones, SQL/108) y las versiones más
+//                                            viejas empiezan a mostrar "Hay una nueva versión".
+//                                            `npm run publicar-version`. Correrlo RECIÉN cuando
+//                                            Google aprobó y publicó el AAB en Play Store; antes,
+//                                            el aviso mandaría a actualizar a algo que no está.
 //
-// Usa las credenciales del SaaS (su .env.local, carpeta hermana; otra ruta con SAAS_ENV_LOCAL).
-// Nunca imprime las claves.
+// "publicar" usa las credenciales del SaaS (su .env.local, carpeta hermana; otra ruta con
+// SAAS_ENV_LOCAL). Nunca imprime las claves.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -68,5 +73,10 @@ function commitearAppJson(versionCode) {
 }
 
 const app = leerApp();
-await publicar(app, leerEnv(ENV_SAAS));
-commitearAppJson(app.versionCode);
+const accion = process.argv[2];
+if (accion === 'commit') commitearAppJson(app.versionCode);
+else if (accion === 'publicar') await publicar(app, leerEnv(ENV_SAAS));
+else {
+  console.error('Uso: node scripts/version-app.mjs commit | publicar');
+  process.exit(1);
+}

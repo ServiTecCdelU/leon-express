@@ -50,7 +50,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build:android": "npx eas-cli@latest build --platform android --profile production --non-interactive --wait && node scripts/publicar-version.mjs"
+    "build:android": "npx eas-cli@latest build --platform android --profile production --non-interactive --wait && node scripts/version-app.mjs commit",
+    "publicar-version": "node scripts/version-app.mjs publicar"
   },
   "private": true
 }
