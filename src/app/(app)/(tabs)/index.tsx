@@ -167,40 +167,42 @@ export default function Inicio() {
           </View>
         </View>
 
-        {/* Celular: todo en una columna. Tablet apaisada y PC: rubros y ofertas a la izquierda,
-            último pedido y accesos en una columna a la derecha. */}
-        <View style={[columnaAncha, { padding: 16, gap: ancha ? 20 : 12, flexDirection: ancha ? 'row' : 'column', alignItems: 'flex-start' }]}>
-          <View style={{ gap: 12, width: ancha ? undefined : '100%', flex: ancha ? 1 : undefined }}>
-            {visitante && <BannerRegistro conSesion={conSesion} accent={accent} />}
+        {/* Celular: todo en una columna. Tablet apaisada y PC: arriba ofertas a la izquierda y
+            último pedido + accesos a la derecha; abajo carruseles y rubros a todo el ancho
+            (mismo margen derecho que "Accesos rápidos"). */}
+        <View style={[columnaAncha, { padding: 16, gap: ancha ? 20 : 12 }]}>
+          <View style={{ gap: ancha ? 20 : 12, flexDirection: ancha ? 'row' : 'column', alignItems: ancha ? 'flex-start' : 'stretch' }}>
+            <View style={{ gap: 12, flex: ancha ? 1 : undefined, minWidth: 0 }}>
+              {visitante && <BannerRegistro conSesion={conSesion} accent={accent} />}
+              <OfertasInicio slug={slug!} accent={accent} conLateral={ancha} />
+            </View>
 
-            <OfertasInicio slug={slug!} accent={accent} enGrilla={ancha} />
-
-            <CarruselProductos titulo="Los más elegidos" icono="fire" slug={slug!} accent={accent} productos={masElegidos.data} cargando={masElegidos.isLoading} />
-
-            <CarruselProductos titulo="Destacados de la semana" icono="star-outline" slug={slug!} accent={accent} productos={destacados.data} cargando={destacados.isLoading} />
-
-            {rubros.length > 0 && (
-              <>
-                <Seccion titulo="Rubros" accion="Ver todos" onAccion={() => setVerRubros(true)} />
-                <GrillaRubros
-                  rubros={rubros}
-                  color={accent}
-                  cantidad={ancha ? 11 : 7}
-                  columnas={ancha ? 6 : 4}
-                  onElegir={(r) => irACatalogo({ rubro: r })}
-                  onVerTodos={() => setVerRubros(true)}
-                />
-              </>
+            {ancha && (
+              <View style={{ width: 340, gap: 12, marginTop: 8 }}>
+                <Laterales ultimo={ultimo} accent={accent} onRepetir={repetirUltimo} />
+              </View>
             )}
-
-            {!ancha && <Laterales ultimo={ultimo} accent={accent} onRepetir={repetirUltimo} fila />}
           </View>
 
-          {ancha && (
-            <View style={{ width: 340, gap: 12, marginTop: 8 }}>
-              <Laterales ultimo={ultimo} accent={accent} onRepetir={repetirUltimo} />
+          <CarruselProductos titulo="Los más elegidos" icono="fire" slug={slug!} accent={accent} productos={masElegidos.data} cargando={masElegidos.isLoading} />
+
+          <CarruselProductos titulo="Destacados de la semana" icono="star-outline" slug={slug!} accent={accent} productos={destacados.data} cargando={destacados.isLoading} />
+
+          {rubros.length > 0 && (
+            <View style={{ gap: 12 }}>
+              <Seccion titulo="Rubros" accion="Ver todos" onAccion={() => setVerRubros(true)} />
+              <GrillaRubros
+                rubros={rubros}
+                color={accent}
+                cantidad={ancha ? 15 : 7}
+                columnas={ancha ? 8 : 4}
+                onElegir={(r) => irACatalogo({ rubro: r })}
+                onVerTodos={() => setVerRubros(true)}
+              />
             </View>
           )}
+
+          {!ancha && <Laterales ultimo={ultimo} accent={accent} onRepetir={repetirUltimo} fila />}
         </View>
       </ScrollView>
 
