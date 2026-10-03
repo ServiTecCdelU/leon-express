@@ -184,18 +184,9 @@ export function Insignia({ texto, bg, fg, borde }: { texto: string; bg: string; 
   );
 }
 
-/** Foto del producto sobre blanco; sin foto (o si no carga), cuadrado teal-50 con iniciales. */
-export function FichaProducto({
-  iniciales,
-  imagenUrl,
-  color = ACCENT_DEFAULT,
-  size = 56,
-}: {
-  iniciales: string;
-  imagenUrl?: string | null;
-  color?: string;
-  size?: number;
-}) {
+/** Foto del producto sobre blanco; sin foto (o si no carga), ícono neutro de paquete (las
+ *  iniciales de un código de ERP como "0118 T500GM" no ayudan a reconocer nada). */
+export function FichaProducto({ imagenUrl, size = 56 }: { imagenUrl?: string | null; size?: number }) {
   // Se guarda la URL que falló (no un booleano) por si la fila se recicla con otro producto.
   const [fallida, setFallida] = useState<string | null>(null);
   if (imagenUrl && imagenUrl !== fallida) {
@@ -211,14 +202,14 @@ export function FichaProducto({
         width: size,
         height: size,
         borderRadius: radius.md,
-        backgroundColor: tint(color, 0.08),
+        backgroundColor: colors.lineSoft,
         borderWidth: 1,
-        borderColor: tint(color, 0.22),
+        borderColor: colors.line,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <T style={{ fontFamily: fonts.display, fontSize: size > 48 ? 18 : 15, color }}>{iniciales}</T>
+      <Icono name="package-variant-closed" size={Math.round(size * 0.5)} color={colors.muted} />
     </View>
   );
 }

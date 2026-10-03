@@ -3,19 +3,17 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 import { FichaProducto, Icono, T } from '@/components/ui';
-import { iniciales } from '@/lib/format';
 import { colors, radius } from '@/theme';
 
 interface Props {
   nombre: string;
   imagenUrl?: string | null;
-  color: string;
   size?: number;
 }
 
-export function FotoProducto({ nombre, imagenUrl, color, size }: Props) {
+export function FotoProducto({ nombre, imagenUrl, size }: Props) {
   const [abierta, setAbierta] = useState(false);
-  const ficha = <FichaProducto iniciales={iniciales(nombre)} imagenUrl={imagenUrl} color={color} size={size} />;
+  const ficha = <FichaProducto imagenUrl={imagenUrl} size={size} />;
   if (!imagenUrl) return ficha;
   return (
     <>

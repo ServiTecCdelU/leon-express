@@ -37,7 +37,8 @@ export function BarraSuperior({
         gap: 12,
       }}
     >
-      {izquierda ?? <LogoMarca nombre={comercio?.nombre || titulo} logoUrl={comercio?.logoUrl} color={color} />}
+      {/* Siempre la distribuidora (sin nombre todavía: ícono de negocio), nunca la inicial de la pantalla. */}
+      {izquierda ?? <LogoMarca nombre={comercio?.nombre ?? ''} logoUrl={comercio?.logoUrl} color={color} />}
       <View style={{ flex: 1 }}>
         <T v="fuerte" numberOfLines={1}>{titulo}</T>
         {subtitulo ? <T v="chico" numberOfLines={1}>{subtitulo}</T> : null}

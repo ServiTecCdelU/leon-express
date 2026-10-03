@@ -6,7 +6,8 @@ import { Icono, T } from '@/components/ui';
 import { equivalencia, parsearCantidad, unidadDeVenta } from '@/lib/cantidad';
 import { colors, fonts, radius } from '@/theme';
 
-const ALTO = 34;
+// 40: cómodo con el dedo (el área táctil llega a 44+ con el hitSlop).
+const ALTO = 40;
 
 export function BotonAgregar({ color, onPress, etiqueta }: { color: string; onPress: () => void; etiqueta: string }) {
   return (
@@ -71,7 +72,7 @@ export function SelectorCantidad({
 export function DetalleCantidad({ cantidad, unidadesPorBulto, seDivideEn }: { cantidad: number; unidadesPorBulto: number | null; seDivideEn: number | null }) {
   const eq = equivalencia(cantidad, unidadesPorBulto, seDivideEn);
   return (
-    <T v="chico" style={{ fontSize: 11, textAlign: 'center' }} numberOfLines={1}>
+    <T v="chico" style={{ fontSize: 12, textAlign: 'center' }} numberOfLines={1}>
       {unidadDeVenta(unidadesPorBulto, seDivideEn, cantidad)}
       {eq ? ` · ${eq}` : ''}
     </T>

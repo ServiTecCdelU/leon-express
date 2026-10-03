@@ -3,7 +3,8 @@
 // estados OK en emerald, radios rounded-2xl y tipografía Geist.
 // El acento puede venir de la distribuidora (distribuidoras.color_primario).
 
-export const ACCENT_DEFAULT = '#0d9488'; // teal-600: botones y links del panel
+// teal-700: botones y links. El teal-600 del panel (#0d9488) con texto blanco da 3.7:1 (< 4.5 AA).
+export const ACCENT_DEFAULT = '#0f766e';
 
 export const colors = {
   bg: '#f9fafb', // --background

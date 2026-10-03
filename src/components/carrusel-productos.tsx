@@ -13,7 +13,7 @@ import { useCarrito, useCarritoStore } from '@/state/carrito';
 
 const GAP = 10;
 /** Ancho mínimo de una tarjeta para que el selector [−] [cantidad] [+] entre sin salirse. */
-const TANDA = { anchoMin: 150, gap: GAP, minimo: 2, maximo: 7 };
+const TANDA = { anchoMin: 160, gap: GAP, minimo: 2, maximo: 7 };
 
 export function CarruselProductos({
   titulo,

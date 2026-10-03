@@ -127,7 +127,7 @@ export default function Pedido() {
           // En pantallas anchas, cada producto en una sola línea: foto y nombre, subtotal y cantidad.
           <View key={l.productId} style={{ padding: 12, gap: ancha ? 24 : 10, flexDirection: ancha ? 'row' : 'column', alignItems: ancha ? 'center' : 'stretch', borderTopWidth: i ? 1 : 0, borderTopColor: colors.lineSoft, backgroundColor: conError ? colors.errorSoft : undefined }}>
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', flex: ancha ? 1 : undefined }}>
-              <FotoProducto nombre={l.nombre} imagenUrl={l.imageUrl} color={accent} size={40} />
+              <FotoProducto nombre={l.nombre} imagenUrl={l.imageUrl} size={40} />
               <View style={{ flex: 1 }}>
                 <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{l.nombre}</T>
                 <T v="chico" style={{ fontSize: 12 }}>

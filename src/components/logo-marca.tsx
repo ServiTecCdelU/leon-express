@@ -1,9 +1,9 @@
 // Logo de la distribuidora (se carga en el superadmin del SaaS). Sin logo, o si no carga,
-// cuadrado del color de la marca con la inicial del nombre.
+// cuadrado del color de la marca con la inicial del nombre (sin nombre todavía: ícono de negocio).
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { T } from '@/components/ui';
+import { Icono, T } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme';
 
 export function LogoMarca({
@@ -36,7 +36,11 @@ export function LogoMarca({
   }
   return (
     <View style={{ width: size, height: size, borderRadius: redondeo, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>
-      <T style={{ fontFamily: fonts.display, color: colors.white, fontSize: Math.round(size * 0.44) }}>{nombre.trim().charAt(0).toUpperCase() || '?'}</T>
+      {nombre.trim() ? (
+        <T style={{ fontFamily: fonts.display, color: colors.white, fontSize: Math.round(size * 0.44) }}>{nombre.trim().charAt(0).toUpperCase()}</T>
+      ) : (
+        <Icono name="storefront-outline" size={Math.round(size * 0.55)} color={colors.white} />
+      )}
     </View>
   );
 }

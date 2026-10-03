@@ -12,7 +12,7 @@ import { Aviso, Boton, Cargando, FichaProducto, Icono, Insignia, T } from '@/com
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { usePermisoCamara } from '@/hooks/use-permiso-camara';
 import { api, ApiError } from '@/lib/api';
-import { iniciales, precio, presentacion } from '@/lib/format';
+import { precio, presentacion } from '@/lib/format';
 import type { ProductoApp } from '@/lib/tipos';
 import { useCarrito, useCarritoStore } from '@/state/carrito';
 import { colors, radius } from '@/theme';
@@ -185,7 +185,7 @@ export default function Escanear() {
             <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 8 }}>
               {estado.productos.map((p) => (
                 <Pressable key={p.id} accessibilityRole="button" onPress={() => elegir(p)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line }}>
-                  <FichaProducto iniciales={iniciales(p.nombre)} imagenUrl={p.imageUrl} color={accent} size={40} />
+                  <FichaProducto imagenUrl={p.imageUrl} size={40} />
                   <T style={{ flex: 1, fontSize: 14 }} numberOfLines={2}>{p.nombre}</T>
                   <T v="numero" style={{ fontSize: 15 }}>{precio(p.precioOferta ?? p.precio)}</T>
                 </Pressable>
@@ -198,7 +198,7 @@ export default function Escanear() {
         {estado.tipo === 'resultado' && elegido && (
           <>
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-              <FotoProducto nombre={elegido.nombre} imagenUrl={elegido.imageUrl} color={accent} size={72} />
+              <FotoProducto nombre={elegido.nombre} imagenUrl={elegido.imageUrl} size={72} />
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="fuerte" numberOfLines={2}>{elegido.nombre}</T>
                 <T v="chico" style={{ fontSize: 12 }}>

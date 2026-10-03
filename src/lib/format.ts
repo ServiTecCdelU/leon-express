@@ -29,10 +29,3 @@ export function presentacion(unidadesPorBulto: number | null, seDivideEn: number
   if (unidadesPorBulto && unidadesPorBulto > 1) return `Bulto x ${unidadesPorBulto}`;
   return 'Unidad';
 }
-
-/** Iniciales para la ficha tipográfica del producto (el catálogo no tiene fotos). */
-export function iniciales(texto: string): string {
-  const limpio = texto.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g, '');
-  if (!limpio) return '•';
-  return limpio[0].toUpperCase() + (limpio[1] ?? '').toLowerCase();
-}
