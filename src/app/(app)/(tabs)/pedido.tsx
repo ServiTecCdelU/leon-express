@@ -14,6 +14,7 @@ import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app
 import { Aviso, Boton, Fila, Insignia, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { ApiError } from '@/lib/api';
+import { equivalencia } from '@/lib/cantidad';
 import { precio, presentacion } from '@/lib/format';
 import { useCotizacion, useCrearPedido, useCuenta } from '@/lib/queries';
 import { useCarrito, useCarritoStore, type ItemCarrito } from '@/state/carrito';
@@ -123,33 +124,52 @@ export default function Pedido() {
       {lineas.map((l, i) => {
         const srv = precioServidor.get(l.productId);
         const conError = errorProducto === l.productId;
-        return (
-          // En pantallas anchas, cada producto en una sola línea: foto y nombre, subtotal y cantidad.
-          <View key={l.productId} style={{ padding: 12, gap: ancha ? 24 : 10, flexDirection: ancha ? 'row' : 'column', alignItems: ancha ? 'center' : 'stretch', borderTopWidth: i ? 1 : 0, borderTopColor: colors.lineSoft, backgroundColor: conError ? colors.errorSoft : undefined }}>
-            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', flex: ancha ? 1 : undefined }}>
-              <FotoProducto nombre={l.nombre} imagenUrl={l.imageUrl} size={40} />
-              <View style={{ flex: 1 }}>
-                <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{l.nombre}</T>
-                <T v="chico" style={{ fontSize: 12 }}>
-                  {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {srv ? precio(srv.price) : visitante ? precio(l.precioReferencia) : '…'} c/u
-                </T>
-                {srv?.itemDiscount ? (
-                  <View style={{ marginTop: 4 }}>
-                    <Insignia texto={`Oferta −${srv.itemDiscount}%`} bg={colors.tealSoft} fg={colors.tealInk} borde={colors.tealLine} />
-                  </View>
-                ) : null}
+        const unitario = srv ? precio(srv.price) : visitante ? precio(l.precioReferencia) : '…';
+        const subtotal = conError ? (
+          <Insignia texto="Ya no está disponible" bg={colors.errorSoft} fg={colors.errorInk} borde={colors.errorLine} />
+        ) : (
+          <T v="numero" style={{ fontSize: 15 }}>{srv ? precio(srv.subtotal) : visitante ? precio(l.precioReferencia * l.cantidad) : '…'}</T>
+        );
+        // Bultos: "10 bultos · 120 u" (en productos por unidad no agrega nada y se omite).
+        const enBultos = equivalencia(l.cantidad, l.unidadesPorBulto, l.seDivideEn) !== null;
+        const selector = <SelectorCantidad cantidad={l.cantidad} color={accent} nombre={l.nombre} onCambiar={(n) => cambiar(l, n)} />;
+        const datos = (
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <T v="fuerte" numberOfLines={2} style={{ fontSize: 14 }}>{l.nombre}</T>
+            <T v="chico" style={{ fontSize: 12 }} numberOfLines={1}>
+              {presentacion(l.unidadesPorBulto, l.seDivideEn)} · {unitario} c/u
+            </T>
+            {enBultos && <DetalleCantidad cantidad={l.cantidad} unidadesPorBulto={l.unidadesPorBulto} seDivideEn={l.seDivideEn} />}
+            {srv?.itemDiscount ? (
+              <View style={{ marginTop: 2, alignSelf: 'flex-start' }}>
+                <Insignia texto={`Oferta −${srv.itemDiscount}%`} bg={colors.tealSoft} fg={colors.tealInk} borde={colors.tealLine} />
               </View>
+            ) : null}
+          </View>
+        );
+        const estiloFila = { padding: 12, borderTopWidth: i ? 1 : 0, borderTopColor: colors.lineSoft, backgroundColor: conError ? colors.errorSoft : undefined };
+
+        // Pantallas anchas: foto y datos, subtotal y cantidad en una línea larga.
+        if (ancha) {
+          return (
+            <View key={l.productId} style={[estiloFila, { flexDirection: 'row', alignItems: 'center', gap: 24 }]}>
+              <View style={{ flex: 1, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                <FotoProducto nombre={l.nombre} imagenUrl={l.imageUrl} size={40} />
+                {datos}
+              </View>
+              {subtotal}
+              {selector}
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
-              {conError ? (
-                <Insignia texto="Ya no está disponible" bg={colors.errorSoft} fg={colors.errorInk} borde={colors.errorLine} />
-              ) : (
-                <T v="numero" style={{ fontSize: 15 }}>{srv ? precio(srv.subtotal) : visitante ? precio(l.precioReferencia * l.cantidad) : '…'}</T>
-              )}
-              <View style={{ alignItems: 'center', gap: 2 }}>
-                <SelectorCantidad cantidad={l.cantidad} color={accent} nombre={l.nombre} onCambiar={(n) => cambiar(l, n)} />
-                <DetalleCantidad cantidad={l.cantidad} unidadesPorBulto={l.unidadesPorBulto} seDivideEn={l.seDivideEn} />
-              </View>
+          );
+        }
+        // Celular: una sola fila; el subtotal va debajo del selector.
+        return (
+          <View key={l.productId} style={[estiloFila, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
+            <FotoProducto nombre={l.nombre} imagenUrl={l.imageUrl} size={40} />
+            {datos}
+            <View style={{ alignItems: 'flex-end', gap: 4 }}>
+              {selector}
+              {subtotal}
             </View>
           </View>
         );
@@ -159,7 +179,7 @@ export default function Pedido() {
 
   const avisos = (
     <>
-      {visitante && <Aviso tono="info" texto="Precios de referencia. Al registrarte se confirman con tu lista de precios." />}
+      {visitante && <Aviso tono="info" texto="Precios de referencia: se confirman al registrarte." />}
       {cot.error && <Aviso texto={cot.error.message} />}
       {cot.data?.retencion && <Aviso tono="info" texto={cot.data.retencion} />}
     </>

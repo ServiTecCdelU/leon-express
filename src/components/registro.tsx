@@ -12,8 +12,8 @@ import { colors, fonts, radius, tint } from '@/theme';
 
 function textos(conSesion: boolean) {
   return conSesion
-    ? { titulo: 'Terminá tu registro', detalle: 'No pudimos completar tu alta en la distribuidora. Probá de nuevo.', accion: 'Completar registro' }
-    : { titulo: 'Registrate', detalle: 'Con tu cuenta vas a ver tus precios, hacer pedidos y seguir tu cuenta corriente.', accion: 'Registrarme con Google' };
+    ? { titulo: 'Terminá tu registro', detalle: 'No pudimos completar tu alta en la distribuidora. Probá de nuevo.', corto: 'Falta terminar tu registro', accion: 'Completar registro' }
+    : { titulo: 'Registrate', detalle: 'Con tu cuenta vas a ver tus precios, hacer pedidos y seguir tu cuenta corriente.', corto: 'Registrate para ver tus precios y pedir', accion: 'Registrarme con Google' };
 }
 
 function useAccionRegistro(conSesion: boolean) {
@@ -69,6 +69,7 @@ export function RecordatorioRegistro({ conSesion, accent }: { conSesion: boolean
   );
 }
 
+/** Tira de una línea arriba del inicio (el detalle va en la hoja que abre): no le quita lugar a las ofertas. */
 export function BannerRegistro({ conSesion, accent }: { conSesion: boolean; accent: string }) {
   const abrir = useRegistroStore((s) => s.abrir);
   const t = textos(conSesion);
@@ -76,14 +77,14 @@ export function BannerRegistro({ conSesion, accent }: { conSesion: boolean; acce
     <Pressable
       accessibilityRole="button"
       onPress={() => abrir()}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: radius.md, backgroundColor: tint(accent, 0.08), borderWidth: 1, borderColor: tint(accent, 0.25), opacity: pressed ? 0.85 : 1 })}
+      accessibilityLabel={`${t.corto}. ${conSesion ? 'Reintentar' : 'Registrarme'}`}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingLeft: 12, paddingRight: 8, borderRadius: radius.md, backgroundColor: tint(accent, 0.08), borderWidth: 1, borderColor: tint(accent, 0.25), opacity: pressed ? 0.85 : 1 })}
     >
-      <Icono name={conSesion ? 'account-check-outline' : 'account-plus-outline'} color={accent} size={22} />
-      <View style={{ flex: 1, gap: 2 }}>
-        <T v="fuerte" style={{ fontSize: 14 }}>{t.titulo}</T>
-        <T v="chico" style={{ fontSize: 12 }}>{t.detalle}</T>
+      <Icono name={conSesion ? 'account-check-outline' : 'account-plus-outline'} color={accent} size={20} />
+      <T v="fuerte" numberOfLines={1} style={{ flex: 1, fontSize: 14 }}>{t.corto}</T>
+      <View style={{ backgroundColor: accent, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
+        <T style={{ color: colors.white, fontFamily: fonts.bodySemi, fontSize: 13 }}>{conSesion ? 'Reintentar' : 'Registrarme'}</T>
       </View>
-      <T style={{ color: accent, fontFamily: fonts.bodySemi, fontSize: 14 }}>{conSesion ? 'Reintentar' : 'Registrarme'}</T>
     </Pressable>
   );
 }
