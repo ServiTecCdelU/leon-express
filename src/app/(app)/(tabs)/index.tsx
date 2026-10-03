@@ -27,26 +27,28 @@ function saludo(): string {
   return h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
 }
 
-/** Parece un campo de texto pero abre Productos con el teclado listo. */
+/** Parece un campo de texto pero abre Productos con el teclado listo. El botón de escanear va
+ *  adentro, a la derecha, igual que en el buscador de Productos. */
 function BuscadorInicio({ accent }: { accent: string }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 8 }}>
+    <View style={[tarjetaBase, { height: 50, flexDirection: 'row', alignItems: 'center', borderRadius: radius.md, paddingRight: 7, overflow: 'hidden' }]}>
       <Pressable
         accessibilityRole="search"
         accessibilityLabel="Buscar productos"
         onPress={() => irACatalogo({ buscar: String(Date.now()) })}
-        style={({ pressed }) => [tarjetaBase, { flex: 1, height: 50, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: radius.md, backgroundColor: pressed ? colors.lineSoft : colors.card }]}
+        style={({ pressed }) => ({ flex: 1, alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 14, paddingRight: 8, backgroundColor: pressed ? colors.lineSoft : undefined })}
       >
         <Icono name="magnify" color={accent} size={22} />
-        <T style={{ color: colors.muted, fontSize: 15 }} numberOfLines={1}>Buscá por nombre, marca o código</T>
+        <T style={{ flex: 1, color: colors.muted, fontSize: 15 }} numberOfLines={1}>Buscá por nombre, marca o código</T>
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Escanear código de barras"
         onPress={() => router.push('/escanear')}
-        style={({ pressed }) => ({ width: 50, height: 50, borderRadius: radius.md, backgroundColor: accent, opacity: pressed ? 0.85 : 1, alignItems: 'center', justifyContent: 'center' })}
+        hitSlop={4}
+        style={({ pressed }) => ({ width: 36, height: 36, borderRadius: radius.sm, backgroundColor: accent, opacity: pressed ? 0.85 : 1, alignItems: 'center', justifyContent: 'center' })}
       >
-        <Icono name="barcode-scan" color={colors.white} size={22} />
+        <Icono name="barcode-scan" color={colors.white} size={20} />
       </Pressable>
     </View>
   );
