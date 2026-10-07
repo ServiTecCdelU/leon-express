@@ -1,7 +1,7 @@
 // Sin test runner en el repo: usa node:test (ver nota en qr-distribuidora.test.ts).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { errorDatosComercio } from './datos-comercio';
+import { errorDatosAlta, errorDatosComercio } from './datos-comercio';
 
 const completos = { negocio: 'Almacén Don Pepe', direccion: 'San Martín 123', localidad: 'C. del Uruguay', telefono: '3442 15-123456' };
 
@@ -17,4 +17,10 @@ test('marca el primer campo que falta', () => {
 
 test('pide un teléfono con al menos 6 números', () => {
   assert.equal(errorDatosComercio({ ...completos, telefono: '12-34' }), 'Escribí un teléfono válido.');
+});
+
+test('el alta pide nombre y supermercado', () => {
+  assert.equal(errorDatosAlta({ nombre: 'Juan Pérez', negocio: 'Súper Don Pepe' }), null);
+  assert.equal(errorDatosAlta({ nombre: ' ', negocio: 'Súper Don Pepe' }), 'Escribí tu nombre.');
+  assert.equal(errorDatosAlta({ nombre: 'Juan', negocio: 'x' }), 'Escribí el nombre del supermercado.');
 });

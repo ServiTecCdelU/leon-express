@@ -13,7 +13,7 @@ import { colors, fonts, radius, tint } from '@/theme';
 
 const VACIOS: DatosComercio = { negocio: '', direccion: '', localidad: '', telefono: '' };
 
-function Campo({ etiqueta, ...props }: TextInputProps & { etiqueta: string }) {
+export function Campo({ etiqueta, ...props }: TextInputProps & { etiqueta: string }) {
   const [enfocado, setEnfocado] = useState(false);
   return (
     <View style={{ gap: 6 }}>

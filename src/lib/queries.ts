@@ -141,11 +141,12 @@ export function useCanjearInvitacion() {
   });
 }
 
-/** Alta sin invitación en la distribuidora del QR: crea la ficha y vincula la cuenta. */
+/** Alta sin invitación en la distribuidora del QR: crea la ficha (con el nombre del negocio) y vincula la cuenta. */
 export function useAltaQr() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (slug: string) => api<{ slug: string; nombre: string }>(`/comercios/${encodeURIComponent(slug)}/alta`, { method: 'POST' }),
+    mutationFn: ({ slug, ...body }: { slug: string; nombre: string; negocio: string }) =>
+      api<{ slug: string; nombre: string }>(`/comercios/${encodeURIComponent(slug)}/alta`, { method: 'POST', body }),
     onSuccess: () => qc.invalidateQueries(),
   });
 }

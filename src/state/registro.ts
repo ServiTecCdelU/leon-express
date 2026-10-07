@@ -14,6 +14,10 @@ interface RegistroState {
   abrir: (motivo?: string) => void;
   cerrar: () => void;
   recordarSiToca: () => void;
+  /** Hoja "Completá tu registro" (nombre y supermercado), con sesión y sin alta todavía. */
+  altaVisible: boolean;
+  abrirAlta: () => void;
+  cerrarAlta: () => void;
 }
 
 export const useRegistroStore = create<RegistroState>()(
@@ -28,6 +32,9 @@ export const useRegistroStore = create<RegistroState>()(
         if (get().visible || Date.now() - get().mostradoAt < CADA_CUANTO_MS) return;
         set({ visible: true, motivo: null, mostradoAt: Date.now() });
       },
+      altaVisible: false,
+      abrirAlta: () => set({ altaVisible: true, visible: false, motivo: null }),
+      cerrarAlta: () => set({ altaVisible: false }),
     }),
     {
       name: 'registro',

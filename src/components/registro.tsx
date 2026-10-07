@@ -1,18 +1,16 @@
-// Modo visitante: modal "Registrarme" y banner. Sin sesión lleva a Google (al volver, el
-// alta en la distribuidora es automática); con sesión y sin alta todavía, la reintenta.
+// Modo visitante: modal "Registrarme" y banner. Sin sesión lleva a Google (al volver se
+// piden nombre y supermercado para el alta); con sesión y sin alta todavía, abre esa hoja.
 import { useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 import { anchoHoja } from '@/components/marco-app';
 import { Aviso, Boton, Icono, T } from '@/components/ui';
 import { ingresarConGoogle } from '@/lib/google';
-import { useAltaQr } from '@/lib/queries';
-import { useComercioStore } from '@/state/comercio';
 import { useRegistroStore } from '@/state/registro';
 import { colors, fonts, radius, tint } from '@/theme';
 
 function textos(conSesion: boolean) {
   return conSesion
-    ? { titulo: 'Terminá tu registro', detalle: 'No pudimos completar tu alta en la distribuidora. Probá de nuevo.', corto: 'Falta terminar tu registro', accion: 'Completar registro' }
+    ? { titulo: 'Terminá tu registro', detalle: 'Falta tu nombre y el de tu supermercado para darte de alta en la distribuidora.', corto: 'Falta terminar tu registro', accion: 'Completar registro' }
     : { titulo: 'Registrate', detalle: 'Con tu cuenta vas a ver tus precios, hacer pedidos y seguir tu cuenta corriente.', corto: 'Registrate para ver tus precios y pedir', accion: 'Registrarme con Google' };
 }
 
@@ -20,14 +18,12 @@ function useAccionRegistro(conSesion: boolean) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cerrar = useRegistroStore((s) => s.cerrar);
-  const distribuidora = useComercioStore((s) => s.distribuidora);
-  const alta = useAltaQr();
+  const abrirAlta = useRegistroStore((s) => s.abrirAlta);
 
   const ejecutar = async () => {
     setError(null);
     if (conSesion) {
-      if (!distribuidora) return;
-      alta.mutate(distribuidora, { onSuccess: cerrar, onError: (e) => setError(e.message) });
+      abrirAlta();
       return;
     }
     setEnviando(true);
@@ -39,7 +35,7 @@ function useAccionRegistro(conSesion: boolean) {
       setEnviando(false);
     }
   };
-  return { ejecutar, enviando: enviando || alta.isPending, error };
+  return { ejecutar, enviando, error };
 }
 
 export function RecordatorioRegistro({ conSesion, accent }: { conSesion: boolean; accent: string }) {
@@ -59,7 +55,7 @@ export function RecordatorioRegistro({ conSesion, accent }: { conSesion: boolean
             <T v="chico" style={{ fontSize: 14 }}>{motivo ?? t.detalle}</T>
           </View>
           {error && <Aviso texto={error} />}
-          <Boton color={accent} icono={conSesion ? 'refresh' : 'google'} onPress={ejecutar} cargando={enviando}>
+          <Boton color={accent} icono={conSesion ? 'pencil-outline' : 'google'} onPress={ejecutar} cargando={enviando}>
             {t.accion}
           </Boton>
           <Boton variante="borde" onPress={cerrar}>Ahora no</Boton>
@@ -77,13 +73,13 @@ export function BannerRegistro({ conSesion, accent }: { conSesion: boolean; acce
     <Pressable
       accessibilityRole="button"
       onPress={() => abrir()}
-      accessibilityLabel={`${t.corto}. ${conSesion ? 'Reintentar' : 'Registrarme'}`}
+      accessibilityLabel={`${t.corto}. ${conSesion ? 'Completar' : 'Registrarme'}`}
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingLeft: 12, paddingRight: 8, borderRadius: radius.md, backgroundColor: tint(accent, 0.08), borderWidth: 1, borderColor: tint(accent, 0.25), opacity: pressed ? 0.85 : 1 })}
     >
       <Icono name={conSesion ? 'account-check-outline' : 'account-plus-outline'} color={accent} size={20} />
       <T v="fuerte" numberOfLines={1} style={{ flex: 1, fontSize: 14 }}>{t.corto}</T>
       <View style={{ backgroundColor: accent, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
-        <T style={{ color: colors.white, fontFamily: fonts.bodySemi, fontSize: 13 }}>{conSesion ? 'Reintentar' : 'Registrarme'}</T>
+        <T style={{ color: colors.white, fontFamily: fonts.bodySemi, fontSize: 13 }}>{conSesion ? 'Completar' : 'Registrarme'}</T>
       </View>
     </Pressable>
   );

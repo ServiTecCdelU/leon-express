@@ -1,24 +1,27 @@
 // Zona de la app. Sin sesión, con la distribuidora del QR, entra como visitante. Al
-// registrarse se da de alta sola en esa distribuidora (sin invitación) y ve la app completa.
+// registrarse se le pide su nombre y el del supermercado, se da de alta en esa
+// distribuidora (sin invitación) y ve la app completa.
 import { Stack } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { HojaAlta } from '@/components/alta-comercio';
 import { Aviso, Boton, Cargando } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
-import { useAltaQr, useCanjearInvitacion } from '@/lib/queries';
+import { useCanjearInvitacion } from '@/lib/queries';
 import { supabase } from '@/lib/supabase';
 import { useComercioStore } from '@/state/comercio';
+import { useRegistroStore } from '@/state/registro';
 import { colors } from '@/theme';
 
 export default function AppLayout() {
-  const { comercios, visitante, conSesion, cargando, error, refetch } = useComercioActivo();
+  const { comercios, visitante, conSesion, cargando, error, refetch, accent } = useComercioActivo();
   const invitacion = useComercioStore((s) => s.invitacion);
   const setInvitacion = useComercioStore((s) => s.setInvitacion);
   const setSlugActivo = useComercioStore((s) => s.setSlugActivo);
   const distribuidora = useComercioStore((s) => s.distribuidora);
   const canjear = useCanjearInvitacion();
   const canjeando = useRef<string | null>(null);
-  const alta = useAltaQr();
+  const { altaVisible, abrirAlta, cerrarAlta } = useRegistroStore();
   const altaIntentada = useRef<string | null>(null);
   const tieneComercio = comercios.length > 0;
 
@@ -38,17 +41,17 @@ export default function AppLayout() {
   }, [conSesion, invitacion, canjear, setInvitacion, setSlugActivo]);
 
   // Registrado, con la distribuidora del QR y sin ficha en ELLA (aunque tenga otros
-  // comercios): alta automática (una vez por distribuidora; si falla queda como visitante
-  // y el banner permite reintentar).
+  // comercios): se abre la hoja de alta (una vez por distribuidora; si la cierra queda
+  // como visitante y el banner la vuelve a abrir).
   const qrVinculado = !!distribuidora && comercios.some((c) => c.slug === distribuidora);
   useEffect(() => {
     if (!conSesion || cargando || error || qrVinculado || invitacion || !distribuidora) return;
     if (altaIntentada.current === distribuidora) return;
     altaIntentada.current = distribuidora;
-    alta.mutate(distribuidora, { onSuccess: (r) => setSlugActivo(r.slug) });
-  }, [conSesion, cargando, error, qrVinculado, invitacion, distribuidora, alta, setSlugActivo]);
+    abrirAlta();
+  }, [conSesion, cargando, error, qrVinculado, invitacion, distribuidora, abrirAlta]);
 
-  if (cargando || canjear.isPending || alta.isPending) return <Cargando />;
+  if (cargando || canjear.isPending) return <Cargando />;
 
   // Si /me falla (sin conexión, API caída, CORS en web) NO es "sin comercio": se muestra el error.
   if (error) {
@@ -63,18 +66,30 @@ export default function AppLayout() {
 
   const puedeNavegar = tieneComercio || visitante;
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-      <Stack.Protected guard={puedeNavegar}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="escanear" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-      </Stack.Protected>
-      <Stack.Protected guard={tieneComercio}>
-        <Stack.Screen name="pedidos/[id]" />
-      </Stack.Protected>
-      {/* También desde el modo visitante con sesión, para vincular el comercio. */}
-      <Stack.Protected guard={conSesion && !tieneComercio}>
-        <Stack.Screen name="sin-comercio" initialParams={{ error: canjear.error?.message ?? '' }} />
-      </Stack.Protected>
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+        <Stack.Protected guard={puedeNavegar}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="escanear" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={tieneComercio}>
+          <Stack.Screen name="pedidos/[id]" />
+        </Stack.Protected>
+        {/* También desde el modo visitante con sesión, para vincular el comercio. */}
+        <Stack.Protected guard={conSesion && !tieneComercio}>
+          <Stack.Screen name="sin-comercio" initialParams={{ error: canjear.error?.message ?? '' }} />
+        </Stack.Protected>
+      </Stack>
+      <HojaAlta
+        visible={altaVisible && conSesion && !qrVinculado}
+        slug={distribuidora}
+        accent={accent}
+        onCerrar={cerrarAlta}
+        onListo={(slug) => {
+          cerrarAlta();
+          setSlugActivo(slug);
+        }}
+      />
+    </>
   );
 }

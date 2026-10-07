@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { nombreDeGoogle } from '@/components/alta-comercio';
 import { BarraSuperior } from '@/components/barra-superior';
 import { DetalleCantidad, SelectorCantidad } from '@/components/cantidad';
 import { HojaDatosComercio } from '@/components/datos-comercio';
@@ -19,6 +20,7 @@ import { precio, presentacion } from '@/lib/format';
 import { useCotizacion, useCrearPedido, useCuenta } from '@/lib/queries';
 import { useCarrito, useCarritoStore, type ItemCarrito } from '@/state/carrito';
 import { useRegistroStore } from '@/state/registro';
+import { useSesion } from '@/state/sesion';
 import { colors, fonts, radius } from '@/theme';
 
 const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; borde: string }> = {
@@ -44,6 +46,7 @@ export default function Pedido() {
   const cot = useCotizacion(slug!, items, !visitante);
   const crear = useCrearPedido(slug!);
   const cuenta = useCuenta(slug!, !visitante);
+  const nombreGoogle = nombreDeGoogle(useSesion().session?.user.user_metadata);
   const [pidiendoDatos, setPidiendoDatos] = useState(false);
 
   const precioServidor = new Map((cot.data?.lineas ?? []).map((l) => [l.productId, l]));
@@ -84,9 +87,9 @@ export default function Pedido() {
       visible={pidiendoDatos}
       slug={slug!}
       accent={accent}
-      // En una ficha recién creada por la app el nombre es el de la cuenta de Google, no el del negocio.
+      // Las fichas de altas viejas de la app tienen el nombre de la cuenta de Google, no el del negocio.
       inicial={{
-        negocio: fichaCliente?.direccion ? fichaCliente.nombre : '',
+        negocio: fichaCliente && fichaCliente.nombre !== nombreGoogle ? fichaCliente.nombre : '',
         direccion: fichaCliente?.direccion ?? '',
         localidad: fichaCliente?.localidad ?? '',
         telefono: fichaCliente?.telefono ?? '',
