@@ -5,12 +5,14 @@ import {
   Geist_700Bold,
   useFonts,
 } from '@expo-google-fonts/geist';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { addNetworkStateListener } from 'expo-network';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AvisoActualizacion } from '@/components/aviso-actualizacion';
+import { SinConexion } from '@/components/sin-conexion';
 import { useHidratado } from '@/hooks/use-hidratado';
 import { ApiError } from '@/lib/api';
 import { useComercioStore } from '@/state/comercio';
@@ -18,6 +20,12 @@ import { SesionProvider, useSesion } from '@/state/sesion';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+// Sin internet las consultas esperan en vez de fallar, y se reintentan al volver la conexión.
+onlineManager.setEventListener((setOnline) => {
+  const sub = addNetworkStateListener((s) => setOnline(s.isConnected !== false));
+  return () => sub.remove();
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +84,7 @@ function Navegacion() {
       </Stack>
       {/* Encima de cualquier pantalla (también bienvenida e ingreso). */}
       <AvisoActualizacion />
+      <SinConexion />
     </>
   );
 }
