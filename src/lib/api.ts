@@ -17,7 +17,7 @@ const TIMEOUT_MS = 20_000;
 export async function api<T>(
   path: string,
   // auth: true exige sesión; 'opcional' la manda si hay (lecturas que ve un visitante).
-  opts: { method?: 'GET' | 'POST' | 'PUT'; body?: unknown; auth?: boolean | 'opcional' } = {},
+  opts: { method?: 'GET' | 'POST' | 'PUT' | 'DELETE'; body?: unknown; auth?: boolean | 'opcional' } = {},
 ): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (opts.auth !== false) {

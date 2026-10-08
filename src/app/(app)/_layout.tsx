@@ -7,8 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HojaAlta } from '@/components/alta-comercio';
 import { Aviso, Boton, Cargando } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
+import { useNotificacionesPush } from '@/hooks/use-notificaciones-push';
+import { cerrarSesion } from '@/lib/notificaciones';
 import { useCanjearInvitacion } from '@/lib/queries';
-import { supabase } from '@/lib/supabase';
 import { useComercioStore } from '@/state/comercio';
 import { useRegistroStore } from '@/state/registro';
 import { colors } from '@/theme';
@@ -24,6 +25,7 @@ export default function AppLayout() {
   const { altaVisible, abrirAlta, cerrarAlta } = useRegistroStore();
   const altaIntentada = useRef<string | null>(null);
   const tieneComercio = comercios.length > 0;
+  useNotificacionesPush(conSesion && tieneComercio);
 
   useEffect(() => {
     // Sin sesión la invitación queda guardada hasta que se registre.
@@ -59,7 +61,7 @@ export default function AppLayout() {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24, gap: 16, justifyContent: 'center' }}>
         <Aviso texto={`No pudimos cargar tus comercios: ${error.message}`} />
         <Boton onPress={() => refetch()}>Reintentar</Boton>
-        <Boton variante="borde" onPress={() => supabase.auth.signOut()}>Salir</Boton>
+        <Boton variante="borde" onPress={cerrarSesion}>Salir</Boton>
       </SafeAreaView>
     );
   }

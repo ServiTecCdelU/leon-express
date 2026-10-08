@@ -6,9 +6,9 @@ import { ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Icono, T, Tarjeta } from '@/components/ui';
+import { cerrarSesion } from '@/lib/notificaciones';
 import { parseQrDistribuidora } from '@/lib/qr-distribuidora';
 import { useCanjearInvitacion } from '@/lib/queries';
-import { supabase } from '@/lib/supabase';
 import { useComercioStore } from '@/state/comercio';
 import { ACCENT_DEFAULT, colors, fonts, radius, tint } from '@/theme';
 
@@ -77,7 +77,7 @@ export default function SinComercio() {
             Volver
           </Boton>
         ) : (
-          <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()}>
+          <Boton variante="borde" icono="logout" onPress={cerrarSesion}>
             Salir
           </Boton>
         )}

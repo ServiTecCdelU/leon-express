@@ -11,9 +11,9 @@ import { BannerRegistro } from '@/components/registro';
 import { Aviso, Boton, Cargando, Fila, Icono, Insignia, T, Tarjeta, type IconName } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaCorta, precio } from '@/lib/format';
+import { cerrarSesion } from '@/lib/notificaciones';
 import { useCuenta, useMe } from '@/lib/queries';
 import type { Cuenta as CuentaApp } from '@/lib/tipos';
-import { supabase } from '@/lib/supabase';
 import { colors, radius, tint } from '@/theme';
 
 const CLASIFICACION: Record<string, { texto: string; bg: string; fg: string; borde: string }> = {
@@ -32,7 +32,7 @@ function CuentaVisitante() {
       <ScrollView contentContainerStyle={[columnaLectura, { padding: 16, gap: 12, paddingBottom: 32 }]}>
         <BannerRegistro conSesion={conSesion} accent={accent} />
         {conSesion && (
-          <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()}>
+          <Boton variante="borde" icono="logout" onPress={cerrarSesion}>
             Cerrar sesión
           </Boton>
         )}
@@ -206,7 +206,7 @@ function CuentaCliente() {
             </View>
           )}
 
-          <Boton variante="borde" icono="logout" onPress={() => supabase.auth.signOut()} style={ancha ? { alignSelf: 'flex-start' } : undefined}>
+          <Boton variante="borde" icono="logout" onPress={cerrarSesion} style={ancha ? { alignSelf: 'flex-start' } : undefined}>
             Cerrar sesión
           </Boton>
 
