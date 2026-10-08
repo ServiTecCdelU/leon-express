@@ -1,9 +1,10 @@
-// Cuenta: datos del comercio, puntos de fidelidad, saldo y crédito, cerrar sesión (o registrarse, si es visitante). Movimientos e "informar pago"
-// llegan en la Fase 2 (la API todavía no los expone).
+// Cuenta: datos del comercio, puntos de fidelidad, saldo y crédito, movimientos de cuenta
+// corriente, informar un pago y cerrar sesión (o registrarse, si es visitante).
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
+import { HojaInformarPago, TarjetaMovimientos } from '@/components/cuenta-corriente';
 import { HojaDatosComercio } from '@/components/datos-comercio';
 import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app';
 import { PieServiTec } from '@/components/pie-servitec';
@@ -145,7 +146,7 @@ function TarjetaPuntos({ puntos, accent }: { puntos: NonNullable<CuentaApp['punt
   );
 }
 
-function TarjetaSaldo({ cuenta, accent }: { cuenta: CuentaApp; accent: string }) {
+function TarjetaSaldo({ cuenta, accent, onInformarPago }: { cuenta: CuentaApp; accent: string; onInformarPago: () => void }) {
   const clasif = CLASIFICACION[cuenta.credito.clasificacion ?? 'normal'] ?? CLASIFICACION.atrasado;
   const usado = cuenta.credito.limite ? Math.min(100, (cuenta.credito.saldo / cuenta.credito.limite) * 100) : null;
   return (
@@ -164,6 +165,11 @@ function TarjetaSaldo({ cuenta, accent }: { cuenta: CuentaApp; accent: string })
           <Fila etiqueta="Límite de crédito" valor={precio(cuenta.credito.limite!)} />
         </View>
       )}
+      {cuenta.credito.saldo > 0 && (
+        <Boton variante="suave" color={accent} icono="cash-fast" chico onPress={onInformarPago}>
+          Informar un pago
+        </Boton>
+      )}
     </Tarjeta>
   );
 }
@@ -176,6 +182,7 @@ function CuentaCliente() {
   // En tablet apaisada y PC, las tarjetas van lado a lado.
   const ancha = useEsAncha();
   const [editando, setEditando] = useState(false);
+  const [informandoPago, setInformandoPago] = useState(false);
   const columna = ancha ? { flex: 1, minWidth: 280 } : undefined;
 
   return (
@@ -201,8 +208,13 @@ function CuentaCliente() {
                 </View>
               )}
               <View style={columna}>
-                <TarjetaSaldo cuenta={c} accent={accent} />
+                <TarjetaSaldo cuenta={c} accent={accent} onInformarPago={() => setInformandoPago(true)} />
               </View>
+              {((c.movimientos?.length ?? 0) > 0 || (c.pagosInformados?.length ?? 0) > 0) && (
+                <View style={columna}>
+                  <TarjetaMovimientos movimientos={c.movimientos ?? []} pagos={c.pagosInformados ?? []} />
+                </View>
+              )}
             </View>
           )}
 
@@ -224,6 +236,7 @@ function CuentaCliente() {
           onGuardado={() => setEditando(false)}
         />
       )}
+      <HojaInformarPago visible={informandoPago} slug={slug!} accent={accent} onCerrar={() => setInformandoPago(false)} />
     </View>
   );
 }

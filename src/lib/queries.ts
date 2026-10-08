@@ -7,6 +7,7 @@ import type {
   Cotizacion,
   Cuenta,
   DatosComercio,
+  InformarPago,
   Me,
   PaginaCatalogo,
   PedidoCreado,
@@ -169,6 +170,15 @@ export function useGuardarDatosComercio(slug: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (datos: DatosComercio) => api<{ guardado: boolean }>(`/comercios/${slug}/datos`, { method: 'PUT', body: datos }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.cuenta(slug) }),
+  });
+}
+
+/** Avisa un pago a la distribuidora: queda pendiente hasta que lo verifica (no baja el saldo). */
+export function useInformarPago(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pago: InformarPago) => api<{ id: string }>(`/comercios/${slug}/pagos`, { method: 'POST', body: pago }),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.cuenta(slug) }),
   });
 }

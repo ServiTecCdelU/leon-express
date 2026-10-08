@@ -108,6 +108,36 @@ export interface Cuenta {
     /** Premios de merchandising, de menos a más puntos. */
     premios: { id: string; nombre: string; descripcion: string | null; imagenUrl: string | null; puntos: number }[];
   } | null;
+  /** Últimos movimientos (opcionales: el servidor viejo no los manda). */
+  movimientos?: MovimientoCuenta[];
+  pagosInformados?: PagoInformado[];
+}
+
+/** Movimiento de cuenta corriente: compra (suma al saldo) o pago (lo baja). */
+export interface MovimientoCuenta {
+  id: string;
+  fecha: string;
+  tipo: 'compra' | 'pago';
+  monto: number;
+  descripcion: string;
+}
+
+/** Pago que informó el comercio desde la app (la distribuidora lo verifica). */
+export interface PagoInformado {
+  id: string;
+  fecha: string;
+  monto: number;
+  estado: 'pendiente' | 'aprobado' | 'rechazado';
+  motivoRechazo: string | null;
+}
+
+export type MetodoPago = 'transferencia' | 'efectivo' | 'cheque' | 'otro';
+
+export interface InformarPago {
+  monto: number;
+  metodo: MetodoPago;
+  nota?: string;
+  comprobante?: { base64: string; tipo: 'image/jpeg' | 'image/png' | 'image/webp' } | null;
 }
 
 /** Datos del comercio que se piden al confirmar el pedido (van a la ficha del cliente). */
