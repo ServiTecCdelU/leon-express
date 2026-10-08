@@ -131,6 +131,19 @@ export function useCrearPedido(slug: string) {
   });
 }
 
+/** Cancela un pedido que sigue "recibido" (el servidor rechaza si ya lo están preparando). */
+export function useCancelarPedido(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pedidoId: string) =>
+      api<{ cancelado: boolean }>(`/comercios/${slug}/pedidos/${encodeURIComponent(pedidoId)}/cancelar`, { method: 'POST' }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: qk.pedidos(slug) });
+      qc.invalidateQueries({ queryKey: qk.cuenta(slug) });
+    },
+  });
+}
+
 export function useCanjearInvitacion() {
   const qc = useQueryClient();
   return useMutation({

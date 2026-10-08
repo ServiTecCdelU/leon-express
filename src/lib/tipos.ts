@@ -84,6 +84,8 @@ export interface PedidoResumen {
   numero: number | null;
   estado: EstadoPedido;
   retenido: boolean;
+  /** true mientras está "recibido": el comercio todavía lo puede cancelar o modificar. */
+  cancelable?: boolean;
   fecha: string;
   desdeApp: boolean;
   cantidadProductos: number;

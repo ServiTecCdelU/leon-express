@@ -1,5 +1,7 @@
-// Detalle / seguimiento de un pedido.
+// Detalle / seguimiento de un pedido. Mientras sigue "recibido" se puede cancelar o
+// modificar (se cancela y sus productos vuelven al carrito para editarlos).
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { ESTADOS, EstadoPedidoInsignia } from '@/components/estado-pedido';
@@ -7,7 +9,7 @@ import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Cargando, Fila, Icono, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
 import { fechaHora, precio } from '@/lib/format';
-import { usePedidos } from '@/lib/queries';
+import { useCancelarPedido, usePedidos } from '@/lib/queries';
 import { useCarritoStore } from '@/state/carrito';
 import { colors, radius } from '@/theme';
 
@@ -17,6 +19,8 @@ export default function Seguimiento() {
   const pedidos = usePedidos(slug!);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
   const pedido = pedidos.data?.find((p) => p.id === id);
+  const cancelar = useCancelarPedido(slug!);
+  const [confirmando, setConfirmando] = useState<'cancelar' | 'modificar' | null>(null);
 
   const volver = (
     <Pressable
@@ -48,6 +52,16 @@ export default function Seguimiento() {
       setCantidad(slug!, { productId: it.productId, nombre: it.nombre, rubro: '', precioReferencia: 0, unidadesPorBulto: null, seDivideEn: null }, it.cantidad);
     }
     router.navigate('/pedido');
+  };
+
+  const confirmar = () => {
+    const modificar = confirmando === 'modificar';
+    cancelar.mutate(pedido.id, {
+      onSuccess: () => {
+        setConfirmando(null);
+        if (modificar) repetir();
+      },
+    });
   };
 
   return (
@@ -108,6 +122,38 @@ export default function Seguimiento() {
           <View style={{ height: 1, backgroundColor: colors.lineSoft, marginVertical: 4 }} />
           <Fila etiqueta="Total" valor={precio(pedido.total)} fuerte />
         </Tarjeta>
+
+        {pedido.cancelable && !confirmando && (
+          <Tarjeta style={{ gap: 10 }}>
+            <T v="fuerte" style={{ fontSize: 14 }}>¿Necesitás cambiar algo?</T>
+            <T v="chico" style={{ fontSize: 13 }}>Podés hacerlo hasta que la distribuidora lo empiece a preparar.</T>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Boton variante="suave" color={accent} icono="pencil-outline" chico onPress={() => setConfirmando('modificar')} style={{ flex: 1 }}>
+                Modificar
+              </Boton>
+              <Boton variante="borde" icono="close" chico onPress={() => setConfirmando('cancelar')} style={{ flex: 1 }}>
+                Cancelar pedido
+              </Boton>
+            </View>
+          </Tarjeta>
+        )}
+        {confirmando && (
+          <Tarjeta style={{ gap: 10, borderColor: colors.errorLine }}>
+            <T v="fuerte" style={{ fontSize: 14 }}>{confirmando === 'modificar' ? '¿Modificar este pedido?' : '¿Cancelar este pedido?'}</T>
+            <T v="chico" style={{ fontSize: 13 }}>
+              {confirmando === 'modificar'
+                ? 'Lo cancelamos y sus productos vuelven al carrito para que los cambies y lo envíes de nuevo.'
+                : 'La distribuidora no lo va a preparar. Si te arrepentís, lo podés volver a pedir.'}
+            </T>
+            {cancelar.error && <Aviso texto={cancelar.error.message} />}
+            <Boton color={colors.errorInk} icono="check" onPress={confirmar} cargando={cancelar.isPending}>
+              {confirmando === 'modificar' ? 'Sí, modificar' : 'Sí, cancelar'}
+            </Boton>
+            <Boton variante="borde" onPress={() => { cancelar.reset(); setConfirmando(null); }} disabled={cancelar.isPending}>
+              No, dejarlo como está
+            </Boton>
+          </Tarjeta>
+        )}
 
         <Boton variante="suave" color={accent} icono="repeat" onPress={repetir}>
           Volver a pedir lo mismo
