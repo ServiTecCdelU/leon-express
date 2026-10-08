@@ -2,7 +2,7 @@
 // corriente, informar un pago y cerrar sesión (o registrarse, si es visitante).
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { Linking, RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { HojaInformarPago, TarjetaMovimientos } from '@/components/cuenta-corriente';
 import { HojaDatosComercio } from '@/components/datos-comercio';
@@ -72,6 +72,16 @@ function TarjetaDatos({ cuenta, telefonoIngreso, accent, onEditar }: { cuenta: C
       <Boton variante="suave" color={accent} icono="pencil-outline" chico onPress={onEditar} style={{ marginTop: 4 }}>
         {cuenta.datosCompletos ? 'Editar mis datos' : 'Completar mis datos'}
       </Boton>
+      {cuenta.contacto?.vendedor && (
+        <Boton
+          variante="borde"
+          icono="whatsapp"
+          chico
+          onPress={() => Linking.openURL(`https://wa.me/549${cuenta.contacto!.vendedor!.whatsapp}?text=${encodeURIComponent(`Hola, soy ${cli.nombre}.`)}`)}
+        >
+          Escribirle a mi vendedor
+        </Boton>
+      )}
     </Tarjeta>
   );
 }
@@ -236,7 +246,7 @@ function CuentaCliente() {
           onGuardado={() => setEditando(false)}
         />
       )}
-      <HojaInformarPago visible={informandoPago} slug={slug!} accent={accent} onCerrar={() => setInformandoPago(false)} />
+      <HojaInformarPago visible={informandoPago} slug={slug!} accent={accent} transferencia={c?.contacto?.transferencia} onCerrar={() => setInformandoPago(false)} />
     </View>
   );
 }

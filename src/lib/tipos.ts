@@ -111,6 +111,17 @@ export interface Cuenta {
   /** Últimos movimientos (opcionales: el servidor viejo no los manda). */
   movimientos?: MovimientoCuenta[];
   pagosInformados?: PagoInformado[];
+  contacto?: {
+    /** WhatsApp del vendedor: 10 dígitos (área + número). */
+    vendedor: { nombre: string; whatsapp: string } | null;
+    transferencia: DatosTransferencia | null;
+  } | null;
+}
+
+export interface DatosTransferencia {
+  alias: string;
+  titular: string;
+  banco: string;
 }
 
 /** Movimiento de cuenta corriente: compra (suma al saldo) o pago (lo baja). */

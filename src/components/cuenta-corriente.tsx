@@ -12,7 +12,7 @@ import { Aviso, Boton, Icono, Insignia, T, Tarjeta } from '@/components/ui';
 import { fechaCorta, precio } from '@/lib/format';
 import { parseMonto } from '@/lib/pagos';
 import { useInformarPago } from '@/lib/queries';
-import type { InformarPago, MetodoPago, MovimientoCuenta, PagoInformado } from '@/lib/tipos';
+import type { DatosTransferencia, InformarPago, MetodoPago, MovimientoCuenta, PagoInformado } from '@/lib/tipos';
 import { colors, fonts, radius, tint } from '@/theme';
 
 const VISIBLES = 5;
@@ -95,7 +95,19 @@ function Chip({ texto, activo, accent, onPress }: { texto: string; activo: boole
   );
 }
 
-export function HojaInformarPago({ visible, slug, accent, onCerrar }: { visible: boolean; slug: string; accent: string; onCerrar: () => void }) {
+export function HojaInformarPago({
+  visible,
+  slug,
+  accent,
+  transferencia,
+  onCerrar,
+}: {
+  visible: boolean;
+  slug: string;
+  accent: string;
+  transferencia?: DatosTransferencia | null;
+  onCerrar: () => void;
+}) {
   const insets = useSafeAreaInsets();
   const informar = useInformarPago(slug);
   const [monto, setMonto] = useState('');
@@ -185,6 +197,14 @@ export function HojaInformarPago({ visible, slug, accent, onCerrar }: { visible:
                     ))}
                   </View>
                 </View>
+                {metodo === 'transferencia' && transferencia && (
+                  <View style={{ gap: 4, padding: 12, borderRadius: radius.md, backgroundColor: tint(accent, 0.06), borderWidth: 1, borderColor: tint(accent, 0.25) }}>
+                    <T v="etiqueta">Datos para transferir</T>
+                    <T v="fuerte" selectable style={{ fontSize: 16 }}>Alias: {transferencia.alias}</T>
+                    {transferencia.titular ? <T v="chico" selectable>Titular: {transferencia.titular}</T> : null}
+                    {transferencia.banco ? <T v="chico" selectable>Banco: {transferencia.banco}</T> : null}
+                  </View>
+                )}
                 <Campo etiqueta="Nota (opcional)" value={nota} onChangeText={setNota} placeholder="Ej.: transferí desde Banco Nación" maxLength={300} />
 
                 <View style={{ gap: 6 }}>
