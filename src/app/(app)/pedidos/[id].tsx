@@ -2,12 +2,13 @@
 // modificar (se cancela y sus productos vuelven al carrito para editarlos).
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, Share, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { ESTADOS, EstadoPedidoInsignia } from '@/components/estado-pedido';
 import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Cargando, Fila, Icono, T, Tarjeta } from '@/components/ui';
 import { useComercioActivo } from '@/hooks/use-comercio-activo';
+import { textoComprobante } from '@/lib/comprobante';
 import { fechaHora, precio } from '@/lib/format';
 import { useCancelarPedido, usePedidos } from '@/lib/queries';
 import { useCarritoStore } from '@/state/carrito';
@@ -15,7 +16,7 @@ import { colors, radius } from '@/theme';
 
 export default function Seguimiento() {
   const { id, nuevo } = useLocalSearchParams<{ id: string; nuevo?: string }>();
-  const { slug, accent } = useComercioActivo();
+  const { slug, accent, comercio } = useComercioActivo();
   const pedidos = usePedidos(slug!);
   const setCantidad = useCarritoStore((s) => s.setCantidad);
   const pedido = pedidos.data?.find((p) => p.id === id);
@@ -52,6 +53,11 @@ export default function Seguimiento() {
       setCantidad(slug!, { productId: it.productId, nombre: it.nombre, rubro: '', precioReferencia: 0, unidadesPorBulto: null, seDivideEn: null }, it.cantidad);
     }
     router.navigate('/pedido');
+  };
+
+  // WhatsApp, mail, etc. Si el navegador no puede compartir no pasa nada.
+  const compartir = () => {
+    Share.share({ message: textoComprobante(pedido, comercio?.nombre) }).catch(() => {});
   };
 
   const confirmar = () => {
@@ -157,6 +163,9 @@ export default function Seguimiento() {
 
         <Boton variante="suave" color={accent} icono="repeat" onPress={repetir}>
           Volver a pedir lo mismo
+        </Boton>
+        <Boton variante="borde" icono="share-variant-outline" onPress={compartir}>
+          Compartir comprobante
         </Boton>
       </ScrollView>
     </View>
