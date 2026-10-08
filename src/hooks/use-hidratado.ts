@@ -4,8 +4,9 @@
 import { useSyncExternalStore } from 'react';
 import { useCarritoStore } from '@/state/carrito';
 import { useComercioStore } from '@/state/comercio';
+import { useFavoritosStore } from '@/state/favoritos';
 
-const stores = [useComercioStore, useCarritoStore];
+const stores = [useComercioStore, useCarritoStore, useFavoritosStore];
 
 const subscribe = (cb: () => void) => {
   const bajas = stores.map((s) => s.persist.onFinishHydration(cb));

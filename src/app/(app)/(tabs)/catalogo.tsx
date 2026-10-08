@@ -1,5 +1,6 @@
 // Productos: catálogo paginado con búsqueda (nombre, código o código de barras),
-// accesos Ofertas / Más pedidos / Rubros (hoja con todos), vista lista o cuadrícula (se recuerda)
+// accesos Ofertas / Más pedidos / Rubros (hoja con todos), favoritos (corazón, guardados en el
+// dispositivo), vista lista o cuadrícula (se recuerda)
 // y cantidades tipeables. Desde el inicio llega con ?q=, ?rubro=, ?ofertas=1, ?mas=1 o ?buscar=.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -15,6 +16,7 @@ import { useCatalogo, useRubros } from '@/lib/queries';
 import { nombreRubro, rubrosVisibles } from '@/lib/rubros';
 import type { ProductoApp } from '@/lib/tipos';
 import { useCarrito, useCarritoStore } from '@/state/carrito';
+import { useFavoritos, useFavoritosStore } from '@/state/favoritos';
 import { usePreferencias } from '@/state/preferencias';
 import { colors, fonts, radius } from '@/theme';
 
@@ -159,10 +161,10 @@ function Atajos({
   );
 }
 
-function Resumen({ total, q, rubro, soloOfertas, masPedidos, onLimpiar }: { total?: number; q: string; rubro: string; soloOfertas: boolean; masPedidos: boolean; onLimpiar: () => void }) {
+function Resumen({ total, q, rubro, soloOfertas, masPedidos, soloFavoritos, onLimpiar }: { total?: number; q: string; rubro: string; soloOfertas: boolean; masPedidos: boolean; soloFavoritos: boolean; onLimpiar: () => void }) {
   if (total === undefined) return null;
-  const filtrado = !!(q || rubro || soloOfertas || masPedidos);
-  const partes = [masPedidos ? 'más pedidos' : '', q ? `para “${q}”` : '', rubro ? `en ${nombreRubro(rubro)}` : '', soloOfertas ? 'en oferta' : ''].filter(Boolean).join(' ');
+  const filtrado = !!(q || rubro || soloOfertas || masPedidos || soloFavoritos);
+  const partes = [soloFavoritos ? 'favoritos' : '', masPedidos ? 'más pedidos' : '', q ? `para “${q}”` : '', rubro ? `en ${nombreRubro(rubro)}` : '', soloOfertas ? 'en oferta' : ''].filter(Boolean).join(' ');
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 10 }}>
       <T v="chico" style={{ flex: 1 }} numberOfLines={1}>
@@ -178,7 +180,19 @@ function Resumen({ total, q, rubro, soloOfertas, masPedidos, onLimpiar }: { tota
   );
 }
 
-function SinResultados({ q, accent, onLimpiar }: { q: string; accent: string; onLimpiar: () => void }) {
+function SinResultados({ q, accent, soloFavoritos, onLimpiar }: { q: string; accent: string; soloFavoritos: boolean; onLimpiar: () => void }) {
+  if (soloFavoritos && !q) {
+    return (
+      <View style={{ alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 32 }}>
+        <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.lineSoft, alignItems: 'center', justifyContent: 'center' }}>
+          <Icono name="heart-outline" size={30} color={colors.muted} />
+        </View>
+        <T v="h2" style={{ textAlign: 'center' }}>Todavía no tenés favoritos</T>
+        <T v="chico" style={{ textAlign: 'center' }}>Tocá el corazón de los productos que pedís siempre y los vas a encontrar acá.</T>
+        <Boton variante="suave" color={accent} chico onPress={onLimpiar}>Ver todos los productos</Boton>
+      </View>
+    );
+  }
   return (
     <View style={{ alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 32 }}>
       <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.lineSoft, alignItems: 'center', justifyContent: 'center' }}>
@@ -238,9 +252,13 @@ export default function Catalogo() {
   const { comercio, slug, accent } = useComercioActivo();
   const { rubro, setRubro, soloOfertas, setSoloOfertas, masPedidos, setMasPedidos, busqueda, setBusqueda, enfoque } = useFiltrosDeRuta();
   const [verRubros, setVerRubros] = useState(false);
+  const [soloFavoritos, setSoloFavoritos] = useState(false);
   const q = useDebounce(busqueda.trim(), 350);
+  const favoritos = useFavoritos(slug);
+  const alternarFavorito = useFavoritosStore((s) => s.alternar);
+  const favoritosSet = useMemo(() => new Set(favoritos), [favoritos]);
 
-  const catalogo = useCatalogo(slug!, q, rubro, soloOfertas, masPedidos);
+  const catalogo = useCatalogo(slug!, q, rubro, soloOfertas, masPedidos, soloFavoritos ? favoritos : undefined);
   const rubrosQuery = useRubros(slug!);
   const rubros = useMemo(() => rubrosVisibles(rubrosQuery.data ?? []), [rubrosQuery.data]);
   const carrito = useCarrito(slug);
@@ -265,7 +283,10 @@ export default function Catalogo() {
     setRubro('');
     setSoloOfertas(false);
     setMasPedidos(false);
+    setSoloFavoritos(false);
   };
+
+  const onFavorito = useCallback((p: ProductoApp) => alternarFavorito(slug!, p.id), [alternarFavorito, slug]);
 
   const cambiar = useCallback(
     (p: ProductoApp, cantidad: number) =>
@@ -283,6 +304,15 @@ export default function Catalogo() {
       <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.line, paddingTop: 12, paddingBottom: 12, gap: 10 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 }}>
           <BarraBusqueda valor={busqueda} onCambiar={setBusqueda} accent={accent} enfoque={enfoque} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: soloFavoritos }}
+            accessibilityLabel={soloFavoritos ? 'Ver todos los productos' : 'Ver mis favoritos'}
+            onPress={() => setSoloFavoritos(!soloFavoritos)}
+            style={({ pressed }) => ({ width: 48, height: 48, borderRadius: radius.md, borderWidth: 1, borderColor: soloFavoritos ? accent : colors.line, backgroundColor: soloFavoritos ? accent : pressed ? colors.lineSoft : colors.card, alignItems: 'center', justifyContent: 'center' })}
+          >
+            <Icono name={soloFavoritos ? 'heart' : 'heart-outline'} color={soloFavoritos ? colors.white : accent} size={22} />
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={grilla ? 'Ver en lista' : 'Ver en cuadrícula'}
@@ -303,7 +333,7 @@ export default function Catalogo() {
           onQuitarRubro={() => setRubro('')}
         />
       </View>
-      <Resumen total={total} q={q} rubro={rubro} soloOfertas={soloOfertas} masPedidos={masPedidos} onLimpiar={limpiar} />
+      <Resumen total={total} q={q} rubro={rubro} soloOfertas={soloOfertas} masPedidos={masPedidos} soloFavoritos={soloFavoritos} onLimpiar={limpiar} />
 
       {catalogo.isLoading ? (
         <Cargando />
@@ -323,16 +353,16 @@ export default function Catalogo() {
           renderItem={({ item }) => (
             <View style={anchoItem ? { width: anchoItem } : undefined}>
               {grilla ? (
-                <ProductoTarjeta producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
+                <ProductoTarjeta producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} favorito={favoritosSet.has(item.id)} onFavorito={onFavorito} />
               ) : (
-                <ProductoFila producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} />
+                <ProductoFila producto={item} cantidad={carrito[item.id]?.cantidad ?? 0} accent={accent} onCambiar={cambiar} favorito={favoritosSet.has(item.id)} onFavorito={onFavorito} />
               )}
             </View>
           )}
           onEndReached={() => catalogo.hasNextPage && !catalogo.isFetchingNextPage && catalogo.fetchNextPage()}
           onEndReachedThreshold={0.5}
           ListFooterComponent={catalogo.isFetchingNextPage ? <Cargando /> : null}
-          ListEmptyComponent={<SinResultados q={q} accent={accent} onLimpiar={limpiar} />}
+          ListEmptyComponent={<SinResultados q={q} accent={accent} soloFavoritos={soloFavoritos} onLimpiar={limpiar} />}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         />

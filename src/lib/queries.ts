@@ -46,9 +46,10 @@ export function useComercioPublico(slug: string | undefined) {
   });
 }
 
-export function useCatalogo(slug: string, q: string, rubro: string, soloOfertas = false, masPedidos = false) {
+/** `favoritos`: si viene, el catálogo se limita a esos ids (los favoritos del dispositivo). */
+export function useCatalogo(slug: string, q: string, rubro: string, soloOfertas = false, masPedidos = false, favoritos?: string[]) {
   return useInfiniteQuery({
-    queryKey: [...qk.catalogo(slug, q, rubro), soloOfertas, masPedidos],
+    queryKey: [...qk.catalogo(slug, q, rubro), soloOfertas, masPedidos, favoritos?.join(',') ?? null],
     initialPageParam: 1,
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ page: String(pageParam), pageSize: String(PAGE_SIZE) });
@@ -56,6 +57,7 @@ export function useCatalogo(slug: string, q: string, rubro: string, soloOfertas 
       if (rubro) params.set('rubro', rubro);
       if (soloOfertas) params.set('soloOfertas', '1');
       if (masPedidos) params.set('masPedidos', '1');
+      if (favoritos) params.set('ids', favoritos.join(','));
       return api<PaginaCatalogo>(`/comercios/${slug}/catalogo?${params}`, { auth: 'opcional' });
     },
     getNextPageParam: (ultima) => (ultima.page < ultima.totalPages ? ultima.page + 1 : undefined),
