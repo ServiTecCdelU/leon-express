@@ -1,8 +1,4 @@
-// Sin test runner en el repo: usa node:test. Node no resuelve imports sin extensión,
-// así que para correrlo hay que copiarlo junto a invitacion.ts / qr-distribuidora.ts
-// con imports './x.ts' y ejecutar `node --experimental-strip-types --test`.
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
 import { parseQrDistribuidora } from './qr-distribuidora';
 
 test('reconoce el deep link de distribuidora con esquema propio', () => {

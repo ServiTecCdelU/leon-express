@@ -1,6 +1,4 @@
-// Sin test runner en el repo: usa node:test (ver nota en qr-distribuidora.test.ts).
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
 import { parseMonto } from './pagos';
 
 test('lee montos con miles y decimales en formato argentino', () => {

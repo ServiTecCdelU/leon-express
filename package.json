@@ -41,9 +41,12 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.5",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -53,7 +56,14 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "build:android": "npx eas-cli@latest build --platform android --profile production --non-interactive --wait && node scripts/version-app.mjs commit",
-    "publicar-version": "node scripts/version-app.mjs publicar"
+    "publicar-version": "node scripts/version-app.mjs publicar",
+    "test": "jest"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
+  }
 }

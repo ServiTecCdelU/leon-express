@@ -1,6 +1,4 @@
-// Sin test runner en el repo: usa node:test (ver nota en qr-distribuidora.test.ts).
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
 import { equivalencia, MAX_CANTIDAD, parsearCantidad, tamanoLote, unidadDeVenta } from './cantidad';
 
 test('tamaño del lote: pack si se divide, si no el bulto, si no 1', () => {
