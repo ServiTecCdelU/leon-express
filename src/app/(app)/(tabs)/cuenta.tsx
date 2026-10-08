@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Linking, RefreshControl, ScrollView, View } from 'react-native';
 import { BarraSuperior } from '@/components/barra-superior';
 import { HojaInformarPago, TarjetaMovimientos } from '@/components/cuenta-corriente';
+import { LinksCuenta } from '@/components/eliminar-cuenta';
 import { HojaDatosComercio } from '@/components/datos-comercio';
 import { columnaAncha, columnaLectura, useEsAncha } from '@/components/marco-app';
 import { PieServiTec } from '@/components/pie-servitec';
@@ -37,6 +38,7 @@ function CuentaVisitante() {
             Cerrar sesión
           </Boton>
         )}
+        <LinksCuenta conSesion={conSesion} />
         <PieServiTec />
       </ScrollView>
     </View>
@@ -231,6 +233,7 @@ function CuentaCliente() {
           <Boton variante="borde" icono="logout" onPress={cerrarSesion} style={ancha ? { alignSelf: 'flex-start' } : undefined}>
             Cerrar sesión
           </Boton>
+          <LinksCuenta conSesion />
 
           <PieServiTec />
         </ScrollView>

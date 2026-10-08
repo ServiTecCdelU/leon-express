@@ -1,7 +1,8 @@
 // Modo visitante: modal "Registrarme" y banner. Sin sesión lleva a Google (al volver se
 // piden nombre y supermercado para el alta); con sesión y sin alta todavía, abre esa hoja.
 import { useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Linking, Modal, Pressable, View } from 'react-native';
+import { URL_PRIVACIDAD } from '@/components/eliminar-cuenta';
 import { anchoHoja } from '@/components/marco-app';
 import { Aviso, Boton, Icono, T } from '@/components/ui';
 import { ingresarConGoogle } from '@/lib/google';
@@ -59,6 +60,15 @@ export function RecordatorioRegistro({ conSesion, accent }: { conSesion: boolean
             {t.accion}
           </Boton>
           <Boton variante="borde" onPress={cerrar}>Ahora no</Boton>
+          {!conSesion && (
+            <T v="chico" style={{ fontSize: 12, textAlign: 'center' }}>
+              Al registrarte aceptás la{' '}
+              <T v="chico" accessibilityRole="link" onPress={() => Linking.openURL(URL_PRIVACIDAD)} style={{ fontSize: 12, textDecorationLine: 'underline' }}>
+                Política de privacidad
+              </T>
+              .
+            </T>
+          )}
         </Pressable>
       </Pressable>
     </Modal>

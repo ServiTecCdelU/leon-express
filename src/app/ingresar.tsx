@@ -1,8 +1,9 @@
 // Ingreso con Google, con el estilo del login del panel: tarjeta centrada.
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { URL_PRIVACIDAD } from '@/components/eliminar-cuenta';
 import { LogoMarca } from '@/components/logo-marca';
 import { columnaLectura } from '@/components/marco-app';
 import { Aviso, Boton, Icono, T, Tarjeta } from '@/components/ui';
@@ -59,6 +60,13 @@ export default function Ingresar() {
           <Boton color={accent} icono="google" onPress={google} cargando={enviando}>
             Continuar con Google
           </Boton>
+          <T v="chico" style={{ fontSize: 12, textAlign: 'center' }}>
+            Al continuar aceptás la{' '}
+            <T v="chico" accessibilityRole="link" onPress={() => Linking.openURL(URL_PRIVACIDAD)} style={{ fontSize: 12, textDecorationLine: 'underline' }}>
+              Política de privacidad
+            </T>
+            .
+          </T>
         </Tarjeta>
 
         <Pressable

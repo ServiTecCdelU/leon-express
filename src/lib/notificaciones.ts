@@ -57,6 +57,17 @@ export async function registrarDispositivo(): Promise<void> {
   tokenRegistrado = token;
 }
 
+/**
+ * Elimina la cuenta en el servidor (borra también sus celulares) y cierra la sesión en
+ * este dispositivo. Si el servidor falla, la sesión sigue abierta y el error se propaga.
+ */
+export async function eliminarCuenta(): Promise<void> {
+  await api('/me', { method: 'DELETE' });
+  tokenRegistrado = null;
+  // El usuario ya no existe en Auth: solo se limpia la sesión local.
+  await supabase.auth.signOut({ scope: 'local' });
+}
+
 /** Cierra la sesión borrando antes el token de este celular (si falla, cierra igual). */
 export async function cerrarSesion(): Promise<void> {
   if (tokenRegistrado) {
